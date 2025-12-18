@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CropTool Tests</title>
+  <style>
+    body {
+      font-family: monospace;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #60a5fa;
+    }
+    #output {
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 16px;
+      white-space: pre-wrap;
+      overflow-x: auto;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    button:hover {
+      background: #2563eb;
+    }
+    .success {
+      color: #4ade80;
+    }
+    .error {
+      color: #f87171;
+    }
+    .warning {
+      color: #fbbf24;
+    }
+  </style>
+</head>
+<body>
+  <h1>CropTool Tests</h1>
+  <p>Click the button below to run all CropTool tests.</p>
+  <button onclick="runTests()">Run Tests</button>
+  <div id="output"></div>
+
+  <script type="module">
+    import { runAllTests } from './src/components/tools/CropTool.test.ts';
+
+    // Override console methods to display in the page
+    const output = document.getElementById('output');
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+    const originalAssert = console.assert;
+
+    function appendOutput(message, className = '') {
+      const line = document.createElement('div');
+      line.textContent = message;
+      if (className) {
+        line.className = className;
+      }
+      output.appendChild(line);
+      output.scrollTop = output.scrollHeight;
+    }
+
+    console.log = (...args) => {
+      originalLog.apply(console, args);
+      const message = args.join(' ');
+      if (message.includes('✓')) {
+        appendOutput(message, 'success');
+      } else if (message.includes('===')) {
+        appendOutput(message);
+      } else {
+        appendOutput(message);
+      }
+    };
+
+    console.error = (...args) => {
+      originalError.apply(console, args);
+      appendOutput(args.join(' '), 'error');
+    };
+
+    console.warn = (...args) => {
+      originalWarn.apply(console, args);
+      appendOutput(args.join(' '), 'warning');
+    };
+
+    console.assert = (condition, ...args) => {
+      originalAssert.apply(console, arguments);
+      if (!condition) {
+        appendOutput('ASSERTION FAILED: ' + args.join(' '), 'error');
+        throw new Error('Assertion failed: ' + args.join(' '));
+      }
+    };
+
+    window.runTests = async function() {
+      output.innerHTML = '';
+      appendOutput('Starting tests...\n');
+
+      try {
+        const result = await runAllTests();
+        if (result) {
+          appendOutput('\n✅ All tests completed successfully!', 'success');
+        }
+      } catch (error) {
+        appendOutput('\n❌ Tests failed with error:', 'error');
+        appendOutput(error.toString(), 'error');
+      }
+    };
+
+    // Auto-run tests on load
+    appendOutput('Page loaded. Click "Run Tests" button or tests will auto-run in 2 seconds...\n');
+    setTimeout(() => {
+      if (output.textContent.split('\n').length < 3) {
+        window.runTests();
+      }
+    }, 2000);
+  </script>
+</body>
+</html>

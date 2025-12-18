@@ -33,7 +33,7 @@ export function DebugPanel() {
       let width = 0;
       let height = 0;
 
-      const result = await decodeFile(file, (percent, _message) => {
+      const result = await decodeFile(file, (percent) => {
         if (percent % 25 === 0) {
           addLog(`  Decode: ${percent.toFixed(0)}%`);
         }

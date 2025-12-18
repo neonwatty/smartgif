@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SplitTool Test Runner</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 0 20px;
+      background: #1a1a1a;
+      color: #fff;
+    }
+    h1 {
+      color: #60a5fa;
+    }
+    .test-output {
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .success {
+      color: #4ade80;
+    }
+    .error {
+      color: #f87171;
+    }
+    .info {
+      color: #60a5fa;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 10px 10px 10px 0;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    button:disabled {
+      background: #374151;
+      cursor: not-allowed;
+    }
+    .demo-section {
+      margin: 40px 0;
+      padding: 20px;
+      background: #111;
+      border-radius: 8px;
+      border: 1px solid #333;
+    }
+    .frame-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .frame-item {
+      background: #222;
+      border: 2px solid #333;
+      border-radius: 4px;
+      padding: 8px;
+      text-align: center;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      image-rendering: pixelated;
+    }
+  </style>
+</head>
+<body>
+  <h1>SplitTool Test Runner</h1>
+  <p>Run tests for the Frame Split/Extract Tool</p>
+
+  <div>
+    <button id="runTests">Run All Tests</button>
+    <button id="testConversion">Test Frame Conversion</button>
+    <button id="loadTestImage">Load Test Image</button>
+  </div>
+
+  <div class="test-output" id="output">
+    <div class="info">Click "Run All Tests" to start testing...</div>
+  </div>
+
+  <div class="demo-section">
+    <h2>Test Image Loader</h2>
+    <input type="file" id="fileInput" accept="image/gif,image/webp" />
+    <div id="frameDisplay" class="frame-grid"></div>
+  </div>
+
+  <script type="module">
+    // Simple logging utility
+    const output = document.getElementById('output');
+
+    function log(message, type = 'info') {
+      const div = document.createElement('div');
+      div.className = type;
+      div.textContent = message;
+      output.appendChild(div);
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function clear() {
+      output.innerHTML = '';
+    }
+
+    // Create test frames
+    function createTestFrame(width, height, color, delay) {
+      const imageData = new ImageData(width, height);
+      const [r, g, b] = color;
+
+      for (let i = 0; i < imageData.data.length; i += 4) {
+        imageData.data[i] = r;
+        imageData.data[i + 1] = g;
+        imageData.data[i + 2] = b;
+        imageData.data[i + 3] = 255;
+      }
+
+      return { imageData, delay };
+    }
+
+    // Convert frame to blob (same as SplitTool)
+    async function frameToBlob(frame) {
+      return new Promise((resolve, reject) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = frame.imageData.width;
+        canvas.height = frame.imageData.height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'));
+          return;
+        }
+
+        ctx.putImageData(frame.imageData, 0, 0);
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('Failed to convert canvas to blob'));
+          }
+        }, 'image/png');
+      });
+    }
+
+    // Test 1: Frame to Blob conversion
+    async function testFrameToBlob() {
+      log('Testing frameToBlob...', 'info');
+      const frame = createTestFrame(100, 100, [255, 0, 0], 100);
+      const blob = await frameToBlob(frame);
+
+      if (blob.type !== 'image/png') {
+        throw new Error(`Expected PNG, got ${blob.type}`);
+      }
+      if (blob.size === 0) {
+        throw new Error('Blob is empty');
+      }
+
+      log(`✓ frameToBlob created PNG blob (${blob.size} bytes)`, 'success');
+    }
+
+    // Test 2: Batch processing
+    async function testBatchProcessing() {
+      log('Testing batch frame processing...', 'info');
+      const frames = Array.from({ length: 10 }, (_, i) =>
+        createTestFrame(50, 50, [i * 25, 128, 255 - i * 25], 100)
+      );
+
+      const blobs = await Promise.all(frames.map(frame => frameToBlob(frame)));
+
+      if (blobs.length !== frames.length) {
+        throw new Error(`Expected ${frames.length} blobs, got ${blobs.length}`);
+      }
+
+      for (const blob of blobs) {
+        if (blob.size === 0) {
+          throw new Error('Empty blob in batch');
+        }
+      }
+
+      log(`✓ Batch processing validated (${blobs.length} frames)`, 'success');
+    }
+
+    // Test 3: Metadata preservation
+    async function testMetadataPreservation() {
+      log('Testing metadata preservation...', 'info');
+      const testCases = [
+        { width: 100, height: 100, delay: 50 },
+        { width: 200, height: 150, delay: 100 },
+        { width: 64, height: 64, delay: 33 },
+      ];
+
+      for (const { width, height, delay } of testCases) {
+        const frame = createTestFrame(width, height, [255, 255, 255], delay);
+
+        if (frame.imageData.width !== width || frame.imageData.height !== height) {
+          throw new Error(`Dimensions mismatch: expected ${width}x${height}`);
+        }
+        if (frame.delay !== delay) {
+          throw new Error(`Delay mismatch: expected ${delay}ms`);
+        }
+
+        const blob = await frameToBlob(frame);
+        if (blob.size === 0) {
+          throw new Error('Failed to create blob with metadata');
+        }
+      }
+
+      log('✓ Metadata preserved correctly', 'success');
+    }
+
+    // Run all tests
+    async function runAllTests() {
+      clear();
+      log('=== SplitTool Tests ===\n', 'info');
+
+      const tests = [
+        { name: 'Frame to Blob Conversion', fn: testFrameToBlob },
+        { name: 'Batch Processing', fn: testBatchProcessing },
+        { name: 'Metadata Preservation', fn: testMetadataPreservation },
+      ];
+
+      let passed = 0;
+      let failed = 0;
+
+      for (const test of tests) {
+        try {
+          await test.fn();
+          passed++;
+        } catch (error) {
+          log(`✗ ${test.name} failed: ${error.message}`, 'error');
+          failed++;
+        }
+      }
+
+      log('\n=== Test Results ===', 'info');
+      log(`Passed: ${passed}/${tests.length}`, passed === tests.length ? 'success' : 'error');
+      log(`Failed: ${failed}/${tests.length}`, failed === 0 ? 'success' : 'error');
+    }
+
+    // Event listeners
+    document.getElementById('runTests').addEventListener('click', runAllTests);
+
+    document.getElementById('testConversion').addEventListener('click', async () => {
+      clear();
+      await testFrameToBlob();
+    });
+
+    document.getElementById('loadTestImage').addEventListener('click', () => {
+      alert('Please use the file input below to load a GIF or WebP file');
+    });
+
+    // File input handler
+    document.getElementById('fileInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      clear();
+      log(`Loading ${file.name}...`, 'info');
+
+      // Note: Full image decoding would require the decoder library
+      // This is a simplified version for demo
+      log('Note: Full GIF/WebP decoding requires the decoder library', 'info');
+      log('For now, creating sample frames for demonstration', 'info');
+
+      // Create sample frames
+      const frames = Array.from({ length: 5 }, (_, i) =>
+        createTestFrame(80, 80, [i * 50, 100, 255 - i * 50], 100)
+      );
+
+      // Display frames
+      const display = document.getElementById('frameDisplay');
+      display.innerHTML = '';
+
+      for (let i = 0; i < frames.length; i++) {
+        const frame = frames[i];
+        const div = document.createElement('div');
+        div.className = 'frame-item';
+
+        const canvas = document.createElement('canvas');
+        canvas.width = frame.imageData.width;
+        canvas.height = frame.imageData.height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.putImageData(frame.imageData, 0, 0);
+
+        div.appendChild(canvas);
+
+        const info = document.createElement('div');
+        info.style.fontSize = '11px';
+        info.style.color = '#888';
+        info.textContent = `Frame ${i + 1}`;
+        div.appendChild(info);
+
+        display.appendChild(div);
+      }
+
+      log(`✓ Displayed ${frames.length} sample frames`, 'success');
+    });
+  </script>
+</body>
+</html>

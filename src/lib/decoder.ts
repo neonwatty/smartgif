@@ -43,7 +43,6 @@ async function decodeWithImageDecoder(
 ): Promise<{ frames: Frame[]; width: number; height: number; fps: number }> {
   const arrayBuffer = await file.arrayBuffer();
 
-  // @ts-ignore - ImageDecoder is available in modern browsers
   const decoder = new ImageDecoder({
     data: arrayBuffer,
     type: file.type || 'image/webp',
