@@ -1,0 +1,43 @@
+name: Post-Deploy Tests
+
+on:
+  workflow_run:
+    workflows: ["Deploy to GitHub Pages"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  test-deployment:
+    runs-on: ubuntu-latest
+    # Only run if the deploy workflow succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: make install
+
+      - name: Install Playwright browsers
+        run: make install-e2e
+
+      - name: Wait for GitHub Pages to update
+        run: sleep 30
+
+      - name: Run tests against live deployment
+        run: make test-deploy
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-deploy
+          path: playwright-report-deploy/
+          retention-days: 7

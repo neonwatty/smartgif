@@ -172,6 +172,32 @@ test.describe('GIF Workflow E2E Tests', () => {
       const previewImage = page.locator('img[alt="Crop preview"]')
       await expect(previewImage).toBeVisible()
     })
+
+    test('should display Original canvas correctly for portrait images', async ({ page }) => {
+      // Regression test for issue where portrait images had canvas positioned off-screen
+      await page.goto('./crop-gif')
+
+      const fileInput = page.locator('input[type="file"]')
+      await fileInput.setInputFiles(path.join(TEST_ASSETS, 'test-portrait.png'))
+
+      await expect(page.getByText(/1 frame/)).toBeVisible({ timeout: 15000 })
+
+      // Wait for canvas to be rendered and have dimensions
+      const canvas = page.locator('canvas').first()
+      await expect(canvas).toBeVisible()
+
+      // Wait a bit for the scale calculation to complete
+      await page.waitForTimeout(500)
+
+      const box = await canvas.boundingBox()
+      expect(box).not.toBeNull()
+      expect(box).toBeDefined()
+      expect(box!.width).toBeGreaterThan(50)
+      expect(box!.height).toBeGreaterThan(50)
+      // Canvas should be within viewport (not positioned off-screen with negative left)
+      // The left position should be >= 0 (not clipped off the left side)
+      expect(box!.x).toBeGreaterThanOrEqual(0)
+    })
   })
 
   test.describe('Resize Tool', () => {
