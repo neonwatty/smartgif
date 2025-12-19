@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type { Frame } from '../../types';
 import {
   cropFrames,
@@ -41,12 +41,16 @@ export function CropTool({ frames, onFramesChange }: CropToolProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [cropRect, setCropRect] = useState<CropRect>({
+  // Track the frames identity to reset crop rect when frames change
+  const framesRef = useRef(frames);
+  const initialRect = useMemo(() => ({
     x: 0,
     y: 0,
     width: frames[0]?.imageData.width || 100,
     height: frames[0]?.imageData.height || 100,
-  });
+  }), [frames]);
+
+  const [cropRect, setCropRect] = useState<CropRect>(initialRect);
 
   const [selectedAspect, setSelectedAspect] = useState<AspectRatioKey>('free');
   const [dragState, setDragState] = useState<DragState>({
@@ -63,11 +67,16 @@ export function CropTool({ frames, onFramesChange }: CropToolProps) {
   const [hoveredHandle, setHoveredHandle] = useState<HandleType>(null);
   const [isOverCropArea, setIsOverCropArea] = useState(false);
 
-  // Initialize crop rect to full image when frames change
+  // Reset crop rect when frames change (new file loaded)
   useEffect(() => {
-    if (frames[0]) {
+    if (frames !== framesRef.current && frames[0]) {
+      framesRef.current = frames;
       const { width, height } = frames[0].imageData;
-      setCropRect({ x: 0, y: 0, width, height });
+      // Use a timeout to avoid synchronous setState in effect
+      const timeoutId = setTimeout(() => {
+        setCropRect({ x: 0, y: 0, width, height });
+      }, 0);
+      return () => clearTimeout(timeoutId);
     }
   }, [frames]);
 
@@ -149,19 +158,19 @@ export function CropTool({ frames, onFramesChange }: CropToolProps) {
       if (!frames[0]) return rect;
       const { width: maxW, height: maxH } = frames[0].imageData;
 
-      let newRect = { ...rect };
+      const constrained = { ...rect };
 
       // Ensure minimum size
-      newRect.width = Math.max(10, newRect.width);
-      newRect.height = Math.max(10, newRect.height);
+      constrained.width = Math.max(10, constrained.width);
+      constrained.height = Math.max(10, constrained.height);
 
       // Constrain to image bounds
-      newRect.width = Math.min(newRect.width, maxW);
-      newRect.height = Math.min(newRect.height, maxH);
-      newRect.x = Math.max(0, Math.min(newRect.x, maxW - newRect.width));
-      newRect.y = Math.max(0, Math.min(newRect.y, maxH - newRect.height));
+      constrained.width = Math.min(constrained.width, maxW);
+      constrained.height = Math.min(constrained.height, maxH);
+      constrained.x = Math.max(0, Math.min(constrained.x, maxW - constrained.width));
+      constrained.y = Math.max(0, Math.min(constrained.y, maxH - constrained.height));
 
-      return newRect;
+      return constrained;
     },
     [frames]
   );

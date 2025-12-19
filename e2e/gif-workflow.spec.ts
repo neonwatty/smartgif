@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, Page } from '@playwright/test'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -6,7 +6,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const TEST_ASSETS = path.join(__dirname, '../test-assets')
 
 // Helper to upload a file and wait for it to load
-async function uploadAndWaitForLoad(page: any, filePath: string) {
+async function uploadAndWaitForLoad(page: Page, filePath: string) {
   const fileInput = page.locator('input[type="file"]')
   await fileInput.setInputFiles(filePath)
   await expect(page.getByText(/\d+ frames?/).first()).toBeVisible({ timeout: 15000 })

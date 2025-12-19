@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Frame } from '../../types';
 import {
   adjustSpeed,
@@ -33,16 +33,20 @@ export function SpeedTool({ frames, onFramesChange }: SpeedToolProps) {
 
   // Update preview when speed multiplier or mode changes
   useEffect(() => {
-    if (mode === 'multiplier') {
-      const adjusted = adjustSpeed(frames, speedMultiplier);
-      setPreviewFrames(adjusted);
-    } else if (mode === 'uniform' && customDelay) {
-      const delay = parseInt(customDelay, 10);
-      if (!isNaN(delay) && delay >= 10) {
-        const uniform = setUniformDelay(frames, delay);
-        setPreviewFrames(uniform);
+    // Use timeout to avoid synchronous setState in effect
+    const timeoutId = setTimeout(() => {
+      if (mode === 'multiplier') {
+        const adjusted = adjustSpeed(frames, speedMultiplier);
+        setPreviewFrames(adjusted);
+      } else if (mode === 'uniform' && customDelay) {
+        const delay = parseInt(customDelay, 10);
+        if (!isNaN(delay) && delay >= 10) {
+          const uniform = setUniformDelay(frames, delay);
+          setPreviewFrames(uniform);
+        }
       }
-    }
+    }, 0);
+    return () => clearTimeout(timeoutId);
   }, [speedMultiplier, customDelay, mode, frames]);
 
   // Animate original frames

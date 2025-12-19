@@ -21,12 +21,16 @@ export function ReverseTool({ frames, onFramesChange }: ReverseToolProps) {
 
   // Update preview when mode changes
   useEffect(() => {
-    if (mode === 'reverse') {
-      setPreviewFrames(reverseFrames(frames));
-    } else {
-      setPreviewFrames(pingPongFrames(frames));
-    }
-    setPreviewFrameIndex(0);
+    // Use timeout to avoid synchronous setState in effect
+    const timeoutId = setTimeout(() => {
+      if (mode === 'reverse') {
+        setPreviewFrames(reverseFrames(frames));
+      } else {
+        setPreviewFrames(pingPongFrames(frames));
+      }
+      setPreviewFrameIndex(0);
+    }, 0);
+    return () => clearTimeout(timeoutId);
   }, [mode, frames]);
 
   // Animate original frames
