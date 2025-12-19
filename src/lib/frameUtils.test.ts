@@ -7,8 +7,6 @@ import { describe, it, expect } from 'vitest'
 import {
   reverseFrames,
   pingPongFrames,
-  adjustSpeed,
-  setUniformDelay,
   setFrameDelay,
   removeEveryNthFrame,
   removeDuplicateFrames,

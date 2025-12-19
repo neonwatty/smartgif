@@ -55,7 +55,8 @@ function createMockContext2D(canvas: HTMLCanvasElement): CanvasRenderingContext2
       }
     }),
 
-    putImageData: vi.fn((imageData: ImageData, _dx: number, _dy: number) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    putImageData: vi.fn((imageData: ImageData, dx: number, dy: number) => {
       currentImageData = imageData
       canvasDataStore.set(canvas, imageData)
     }),
@@ -204,10 +205,12 @@ HTMLCanvasElement.prototype.getContext = function(
 HTMLCanvasElement.prototype.toBlob = function(
   callback: BlobCallback,
   type?: string,
-  _quality?: number
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  quality?: number
 ) {
-  const canvas = this
-  const stored = canvasDataStore.get(canvas)
+  // eslint-disable-next-line @typescript-eslint/no-this-alias
+  const canvasElement = this
+  const stored = canvasDataStore.get(canvasElement)
 
   setTimeout(() => {
     if (stored) {
@@ -215,7 +218,7 @@ HTMLCanvasElement.prototype.toBlob = function(
       callback(blob)
     } else {
       // Create empty blob for empty canvas
-      const emptyData = new Uint8ClampedArray(canvas.width * canvas.height * 4)
+      const emptyData = new Uint8ClampedArray(canvasElement.width * canvasElement.height * 4)
       const blob = new Blob([emptyData], { type: type || 'image/png' })
       callback(blob)
     }

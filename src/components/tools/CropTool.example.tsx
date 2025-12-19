@@ -182,7 +182,7 @@ export function CropToolMultiFrameExample() {
  * Example: Programmatic cropping without UI
  */
 export function ProgrammaticCropExample() {
-  const example = async () => {
+  const runExample = async () => {
     // Import the utility functions
     const { cropFrames, autoCrop, getAspectRatioRect, ASPECT_RATIOS } = await import(
       '../../lib/transforms'
@@ -216,5 +216,7 @@ export function ProgrammaticCropExample() {
     console.log('Manual crop:', manualCrop);
   };
 
+  // Example function available for documentation
+  void runExample;
   return null;
 }

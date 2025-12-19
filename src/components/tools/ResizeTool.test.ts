@@ -11,7 +11,7 @@
 import { describe, it, expect } from 'vitest';
 import { resizeFrames, resizeImageData } from '../../lib/transforms';
 import type { Frame } from '../../types';
-import { createTestFrame, createMockFrames } from '../../test/testUtils';
+import { createTestFrame } from '../../test/testUtils';
 
 /**
  * Load an image from file path and convert to ImageData

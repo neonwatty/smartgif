@@ -19,6 +19,8 @@ export function SpeedToolExample() {
   // Example: Load frames from a file
   const loadFramesFromFile = async (file: File) => {
     setLoading(true);
+    // File would be used by decoder: console.log('Loading:', file.name)
+    void file;
     try {
       // You would use your decoder here
       // const decoded = await decodeFile(file);
