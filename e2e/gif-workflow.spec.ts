@@ -19,15 +19,15 @@ test.describe('GIF Workflow E2E Tests', () => {
 
       // Check hero section
       await expect(page.getByText('Smart GIF Tools')).toBeVisible()
-      await expect(page.getByText('That Run in Your Browser')).toBeVisible()
+      await expect(page.getByText('For Images, Videos & GIFs')).toBeVisible()
 
       // Check privacy banner
       await expect(page.getByText('Your Privacy, Guaranteed')).toBeVisible()
 
       // Check tool cards are visible
       await expect(page.getByText('Convert to GIF')).toBeVisible()
-      await expect(page.getByText('Crop GIF')).toBeVisible()
-      await expect(page.getByText('Resize GIF')).toBeVisible()
+      await expect(page.getByText('Precisely crop images and GIFs')).toBeVisible()
+      await expect(page.getByText('Scale images and GIFs')).toBeVisible()
 
       // Check CTA buttons
       await expect(page.getByRole('link', { name: 'Start Converting' })).toBeVisible()
@@ -42,7 +42,7 @@ test.describe('GIF Workflow E2E Tests', () => {
 
       // Go back and try another tool
       await page.goto('./')
-      await page.click('text=Crop GIF')
+      await page.getByText('Precisely crop images and GIFs').click()
       await expect(page).toHaveURL(/\/crop-gif/)
     })
   })

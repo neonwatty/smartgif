@@ -42,44 +42,44 @@ const TOOLS = [
   {
     icon: '🔄',
     name: 'Convert to GIF',
-    description: 'Convert videos and images to optimized GIFs with precise file size control.',
+    description: 'Convert PNG, JPG, WebP images and MP4/WebM videos to optimized GIFs.',
     link: '/convert',
-    features: ['MP4, WebM, WebP support', 'Target file size', 'Auto-optimization'],
+    features: ['Images & videos', 'Target file size', 'Auto-optimization'],
   },
   {
     icon: '✂️',
-    name: 'Crop GIF',
-    description: 'Precisely crop your GIFs with aspect ratio presets or freeform selection.',
+    name: 'Crop',
+    description: 'Precisely crop images and GIFs with aspect ratio presets or freeform selection.',
     link: '/crop-gif',
-    features: ['Aspect ratio lock', 'Auto-crop borders', 'Visual guides'],
+    features: ['PNG, JPG, GIF support', 'Aspect ratio lock', 'Auto-crop borders'],
   },
   {
     icon: '📐',
-    name: 'Resize GIF',
-    description: 'Scale GIFs to exact dimensions with platform presets for Discord, Twitter, and more.',
+    name: 'Resize',
+    description: 'Scale images and GIFs to exact dimensions with platform presets for Discord, Twitter, and more.',
     link: '/resize-gif',
     features: ['Platform presets', 'Quality control', 'Aspect ratio lock'],
   },
   {
     icon: '⏱️',
     name: 'Change Speed',
-    description: 'Speed up or slow down your GIFs with precise timing controls.',
+    description: 'Speed up or slow down GIFs and animations with precise timing controls.',
     link: '/change-gif-speed',
     features: ['Speed multiplier', 'Frame delay editor', 'Smooth playback'],
   },
   {
     icon: '↩️',
-    name: 'Reverse GIF',
-    description: 'Play your GIF backwards or create seamless boomerang loops.',
+    name: 'Reverse',
+    description: 'Play GIFs and animations backwards or create seamless boomerang loops.',
     link: '/reverse-gif',
     features: ['Reverse playback', 'Boomerang mode', 'Ping-pong loop'],
   },
   {
     icon: '🔃',
     name: 'Rotate & Flip',
-    description: 'Rotate 90°/180°/270° or flip horizontally and vertically.',
+    description: 'Rotate images and GIFs 90°/180°/270° or flip horizontally and vertically.',
     link: '/rotate-flip-gif',
-    features: ['90° rotations', 'Flip H/V', 'Arbitrary angle'],
+    features: ['All image formats', 'Flip H/V', 'Arbitrary angle'],
   },
   {
     icon: '📑',
@@ -101,11 +101,11 @@ export function LandingPage() {
               Smart GIF Tools
             </span>
             <span className="block text-2xl md:text-3xl font-normal text-gray-400 mt-3 delay-100 animate-on-load animate-fade-in-up">
-              That Run in Your Browser
+              For Images, Videos & GIFs
             </span>
           </h1>
           <p className="text-gray-400 max-w-2xl mx-auto text-lg delay-200 animate-on-load animate-fade-in-up">
-            Convert, crop, resize, speed up, reverse, rotate, and split GIFs —
+            Convert images and videos to GIFs, or edit existing GIFs — crop, resize, speed up, reverse, rotate, and more.
             <span className="text-green-400 font-medium"> 100% free</span>,
             <span className="text-blue-400 font-medium"> 100% private</span>.
             Your files never leave your device.
@@ -145,7 +145,7 @@ export function LandingPage() {
         {/* Tools Grid */}
         <section id="tools" className="space-y-8">
           <h2 className="text-3xl font-bold text-white text-center font-display delay-500 animate-on-load animate-fade-in-up">
-            All the GIF Tools You Need
+            All the Tools You Need
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {TOOLS.map((tool, index) => (
@@ -159,7 +159,7 @@ export function LandingPage() {
           <h2 className="text-3xl font-bold text-white text-center font-display">How It Works</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { icon: '📁', title: '1. Upload', desc: 'Drag & drop or click to upload your GIF, video, or image file.' },
+              { icon: '📁', title: '1. Upload', desc: 'Drag & drop your image, video, or GIF. Supports PNG, JPG, WebP, MP4, WebM.' },
               { icon: '🎨', title: '2. Edit', desc: 'Use our powerful tools to transform your GIF exactly how you want.' },
               { icon: '⬇️', title: '3. Download', desc: 'Get your optimized GIF instantly. No watermarks, no limits.' },
             ].map((step, i) => (
@@ -208,7 +208,7 @@ export function LandingPage() {
         {/* CTA */}
         <section className="text-center space-y-6 py-12">
           <h2 className="text-3xl font-bold gradient-text font-display glow-text">Ready to Create Amazing GIFs?</h2>
-          <p className="text-gray-400 text-lg">No signup, no downloads, no hassle. Just powerful GIF tools.</p>
+          <p className="text-gray-400 text-lg">No signup, no downloads, no hassle. Just powerful image and GIF tools.</p>
           <Link
             to="/convert"
             className="inline-block px-10 py-5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold rounded-xl transition-all text-lg animate-pulse-glow hover:scale-105 shadow-lg shadow-blue-500/25"
