@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Homepage / Convert to GIF -->
+  <url>
+    <loc>https://neonwatty.github.io/smartgif/</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Crop GIF Tool -->
+  <url>
+    <loc>https://neonwatty.github.io/smartgif/crop-gif</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Resize GIF Tool -->
+  <url>
+    <loc>https://neonwatty.github.io/smartgif/resize-gif</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Change GIF Speed Tool -->
+  <url>
+    <loc>https://neonwatty.github.io/smartgif/change-gif-speed</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Reverse GIF Tool -->
+  <url>
+    <loc>https://neonwatty.github.io/smartgif/reverse-gif</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Rotate/Flip GIF Tool -->
+  <url>
+    <loc>https://neonwatty.github.io/smartgif/rotate-flip-gif</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- GIF to Frames Tool -->
+  <url>
+    <loc>https://neonwatty.github.io/smartgif/gif-to-frames</loc>
+    <lastmod>2025-12-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>

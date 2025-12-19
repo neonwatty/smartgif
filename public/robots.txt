@@ -1,0 +1,9 @@
+# robots.txt for SmartGIF
+# https://neonwatty.github.io/smartgif/
+
+# Allow all search engines to crawl the entire site
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://neonwatty.github.io/smartgif/sitemap.xml
