@@ -94,16 +94,31 @@ export function CropTool({ frames, onFramesChange }: CropToolProps) {
     canvas.width = imageData.width;
     canvas.height = imageData.height;
 
-    // Calculate scale to fit container (max 400px height for side-by-side layout)
-    const containerWidth = container.clientWidth;
-    const maxHeight = 400;
-    const scaleX = containerWidth / imageData.width;
-    const scaleY = maxHeight / imageData.height;
-    const newScale = Math.min(scaleX, scaleY, 1);
-    setScale(newScale);
-
     // Draw image
     ctx.putImageData(imageData, 0, 0);
+
+    // Calculate scale to fit container
+    const calculateScale = () => {
+      const containerWidth = container.clientWidth;
+      // Wait for container to have a valid width
+      if (containerWidth === 0) return;
+
+      const maxHeight = 400;
+      const scaleX = containerWidth / imageData.width;
+      const scaleY = maxHeight / imageData.height;
+      // Ensure minimum scale of 0.1 to keep canvas visible
+      const newScale = Math.max(0.1, Math.min(scaleX, scaleY, 1));
+      setScale(newScale);
+    };
+
+    // Calculate immediately
+    calculateScale();
+
+    // Also recalculate on resize
+    const resizeObserver = new ResizeObserver(calculateScale);
+    resizeObserver.observe(container);
+
+    return () => resizeObserver.disconnect();
   }, [frames]);
 
   // Generate preview of cropped result
@@ -493,7 +508,13 @@ export function CropTool({ frames, onFramesChange }: CropToolProps) {
             className="flex items-center justify-center overflow-hidden"
             style={{ minHeight: '200px' }}
           >
-            <div className="relative inline-block">
+            <div
+              className="relative"
+              style={{
+                width: imageWidth * scale,
+                height: imageHeight * scale,
+              }}
+            >
               <canvas
                 ref={canvasRef}
                 onMouseDown={handleMouseDown}
