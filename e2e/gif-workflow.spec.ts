@@ -140,6 +140,38 @@ test.describe('GIF Workflow E2E Tests', () => {
       await expect(page.getByText(/1 frame/)).toBeVisible({ timeout: 15000 })
       await expect(page.getByRole('button', { name: 'Apply' })).toBeVisible()
     })
+
+    test('should display Original image canvas after upload', async ({ page }) => {
+      await page.goto('./crop-gif')
+
+      await uploadAndWaitForLoad(page, path.join(TEST_ASSETS, 'sample-animation.gif'))
+
+      // Verify "Original" section label is visible
+      await expect(page.getByText(/Original \(\d+ x \d+\)/)).toBeVisible()
+
+      // Verify canvas element exists and is visible in the Original section
+      const canvas = page.locator('canvas').first()
+      await expect(canvas).toBeVisible()
+
+      // Verify canvas has non-zero dimensions (image is rendered)
+      const box = await canvas.boundingBox()
+      expect(box).not.toBeNull()
+      expect(box!.width).toBeGreaterThan(0)
+      expect(box!.height).toBeGreaterThan(0)
+    })
+
+    test('should display Preview image after upload', async ({ page }) => {
+      await page.goto('./crop-gif')
+
+      await uploadAndWaitForLoad(page, path.join(TEST_ASSETS, 'sample-animation.gif'))
+
+      // Verify "Preview" section label is visible
+      await expect(page.getByText(/Preview \(\d+ x \d+\)/)).toBeVisible()
+
+      // Verify preview image is visible
+      const previewImage = page.locator('img[alt="Crop preview"]')
+      await expect(previewImage).toBeVisible()
+    })
   })
 
   test.describe('Resize Tool', () => {
