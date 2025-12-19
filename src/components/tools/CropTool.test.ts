@@ -18,11 +18,8 @@ import {
   type CropRect,
 } from '../../lib/transforms'
 import type { Frame } from '../../types'
-import {
-  createTestFrame,
-  createMockFrames,
-  createFrameWithTransparentEdges,
-} from '../../test/testUtils'
+// Test utilities available if needed:
+// import { createTestFrame, createMockFrames, createFrameWithTransparentEdges } from '../../test/testUtils'
 
 /**
  * Load an image from file path and convert to ImageData
@@ -92,7 +89,8 @@ function createFrameWithPadding(
   width: number,
   height: number,
   padding: number,
-  _color = 'red'
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  color: string = 'red'
 ): Frame {
   const data = new Uint8ClampedArray(width * height * 4)
 

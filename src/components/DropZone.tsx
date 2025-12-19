@@ -6,7 +6,7 @@ interface DropZoneProps {
   disabled?: boolean;
 }
 
-export function DropZone({ onFileSelect, accept = '.webp,.gif,.mp4,.webm', disabled = false }: DropZoneProps) {
+export function DropZone({ onFileSelect, accept = 'image/*,video/*,.webp,.gif,.mp4,.webm', disabled = false }: DropZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -92,7 +92,7 @@ export function DropZone({ onFileSelect, accept = '.webp,.gif,.mp4,.webm', disab
             {isDragging ? 'Drop file here' : 'Drag & drop or click to upload'}
           </p>
           <p className="text-sm text-gray-500 mt-1">
-            Supports WebP, GIF, MP4, WebM
+            Supports PNG, JPEG, WebP, GIF, MP4, WebM
           </p>
         </div>
       </div>

@@ -4,8 +4,8 @@ import { SpeedTool } from '../components/tools/SpeedTool';
 export function SpeedPage() {
   return (
     <ToolPageWrapper
-      title="Adjust Speed"
-      description="Change the playback speed of your GIF"
+      title="Speed"
+      description="Adjust playback speed of images or videos • Export as GIF"
     >
       {({ frames, onFramesChange }) => (
         <SpeedTool frames={frames} onFramesChange={onFramesChange} />

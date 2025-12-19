@@ -4,8 +4,8 @@ import { ReverseTool } from '../components/tools/ReverseTool';
 export function ReversePage() {
   return (
     <ToolPageWrapper
-      title="Reverse GIF"
-      description="Reverse your GIF or create a ping-pong boomerang effect"
+      title="Reverse"
+      description="Reverse or create ping-pong boomerang effects • Export as GIF"
     >
       {({ frames, onFramesChange }) => (
         <ReverseTool frames={frames} onFramesChange={onFramesChange} />

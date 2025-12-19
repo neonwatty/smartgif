@@ -157,10 +157,16 @@ export function reduceFrameRateFast(
 /**
  * Yield to main thread to keep UI responsive
  */
+// Scheduler API type (not yet in TypeScript lib)
+interface SchedulerAPI {
+  yield: () => Promise<void>;
+}
+
 function yieldToMain(): Promise<void> {
   return new Promise(resolve => {
-    if ('scheduler' in globalThis && 'yield' in (globalThis as any).scheduler) {
-      (globalThis as any).scheduler.yield().then(resolve);
+    const global = globalThis as { scheduler?: SchedulerAPI };
+    if (global.scheduler?.yield) {
+      global.scheduler.yield().then(resolve);
     } else {
       setTimeout(resolve, 0);
     }

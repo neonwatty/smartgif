@@ -4,8 +4,8 @@ import { CropTool } from '../components/tools/CropTool';
 export function CropPage() {
   return (
     <ToolPageWrapper
-      title="Crop GIF"
-      description="Crop your GIF to a specific region with aspect ratio presets"
+      title="Crop"
+      description="Crop images or videos to a specific region • Export as GIF"
     >
       {({ frames, onFramesChange }) => (
         <CropTool frames={frames} onFramesChange={onFramesChange} />

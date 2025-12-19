@@ -14,12 +14,12 @@ function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<ConvertPage />} />
-          <Route path="crop" element={<CropPage />} />
-          <Route path="resize" element={<ResizePage />} />
-          <Route path="speed" element={<SpeedPage />} />
-          <Route path="reverse" element={<ReversePage />} />
-          <Route path="rotate" element={<RotatePage />} />
-          <Route path="split" element={<SplitPage />} />
+          <Route path="crop-gif" element={<CropPage />} />
+          <Route path="resize-gif" element={<ResizePage />} />
+          <Route path="change-gif-speed" element={<SpeedPage />} />
+          <Route path="reverse-gif" element={<ReversePage />} />
+          <Route path="rotate-flip-gif" element={<RotatePage />} />
+          <Route path="gif-to-frames" element={<SplitPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

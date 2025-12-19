@@ -17,11 +17,13 @@ export function RotateToolExample() {
   const [loading, setLoading] = useState(false);
 
   // Example: Load frames from a file
-  const loadFramesFromFile = async (_file: File) => {
+  const loadFramesFromFile = async (file: File) => {
     setLoading(true);
+    // File would be used by decoder: console.log('Loading:', file.name)
+    void file;
     try {
       // You would use your decoder here
-      // const decoded = await decodeAnimatedImage(_file);
+      // const decoded = await decodeAnimatedImage(file);
       // setFrames(decoded.frames);
 
       // For demo purposes, create sample frames
