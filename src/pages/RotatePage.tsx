@@ -5,7 +5,7 @@ export function RotatePage() {
   return (
     <ToolPageWrapper
       title="Rotate & Flip"
-      description="Rotate or flip your GIF horizontally/vertically"
+      description="Rotate or flip images and videos • Export as GIF"
     >
       {({ frames, onFramesChange }) => (
         <RotateTool frames={frames} onFramesChange={onFramesChange} />

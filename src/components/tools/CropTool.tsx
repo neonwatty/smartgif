@@ -14,15 +14,28 @@ interface CropToolProps {
 }
 
 type AspectRatioKey = keyof typeof ASPECT_RATIOS | 'free';
+type HandleType = 'nw' | 'ne' | 'sw' | 'se' | 'n' | 's' | 'e' | 'w' | null;
 
 interface DragState {
   isDragging: boolean;
   isResizing: boolean;
-  resizeHandle: 'nw' | 'ne' | 'sw' | 'se' | 'n' | 's' | 'e' | 'w' | null;
+  resizeHandle: HandleType;
   startX: number;
   startY: number;
   startRect: CropRect;
 }
+
+// Cursor mapping for resize handles
+const HANDLE_CURSORS: Record<string, string> = {
+  nw: 'nwse-resize',
+  se: 'nwse-resize',
+  ne: 'nesw-resize',
+  sw: 'nesw-resize',
+  n: 'ns-resize',
+  s: 'ns-resize',
+  e: 'ew-resize',
+  w: 'ew-resize',
+};
 
 export function CropTool({ frames, onFramesChange }: CropToolProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -47,12 +60,13 @@ export function CropTool({ frames, onFramesChange }: CropToolProps) {
 
   const [scale, setScale] = useState(1);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [hoveredHandle, setHoveredHandle] = useState<HandleType>(null);
+  const [isOverCropArea, setIsOverCropArea] = useState(false);
 
   // Initialize crop rect to full image when frames change
   useEffect(() => {
     if (frames[0]) {
       const { width, height } = frames[0].imageData;
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCropRect({ x: 0, y: 0, width, height });
     }
   }, [frames]);
@@ -71,11 +85,11 @@ export function CropTool({ frames, onFramesChange }: CropToolProps) {
     canvas.width = imageData.width;
     canvas.height = imageData.height;
 
-    // Calculate scale to fit container
-    const containerWidth = container.clientWidth - 40; // padding
-    const containerHeight = 500; // max height
+    // Calculate scale to fit container (max 400px height for side-by-side layout)
+    const containerWidth = container.clientWidth;
+    const maxHeight = 400;
     const scaleX = containerWidth / imageData.width;
-    const scaleY = containerHeight / imageData.height;
+    const scaleY = maxHeight / imageData.height;
     const newScale = Math.min(scaleX, scaleY, 1);
     setScale(newScale);
 
@@ -135,12 +149,19 @@ export function CropTool({ frames, onFramesChange }: CropToolProps) {
       if (!frames[0]) return rect;
       const { width: maxW, height: maxH } = frames[0].imageData;
 
-      return {
-        x: Math.max(0, Math.min(rect.x, maxW - rect.width)),
-        y: Math.max(0, Math.min(rect.y, maxH - rect.height)),
-        width: Math.max(10, Math.min(rect.width, maxW)),
-        height: Math.max(10, Math.min(rect.height, maxH)),
-      };
+      let newRect = { ...rect };
+
+      // Ensure minimum size
+      newRect.width = Math.max(10, newRect.width);
+      newRect.height = Math.max(10, newRect.height);
+
+      // Constrain to image bounds
+      newRect.width = Math.min(newRect.width, maxW);
+      newRect.height = Math.min(newRect.height, maxH);
+      newRect.x = Math.max(0, Math.min(newRect.x, maxW - newRect.width));
+      newRect.y = Math.max(0, Math.min(newRect.y, maxH - newRect.height));
+
+      return newRect;
     },
     [frames]
   );
@@ -174,41 +195,52 @@ export function CropTool({ frames, onFramesChange }: CropToolProps) {
   };
 
   const getHandleRect = (handle: string): { x: number; y: number } => {
-    const handleSize = 8;
+    const handleSize = 12;
     const offset = handleSize / 2;
 
-    const positions = {
+    const positions: Record<string, { x: number; y: number }> = {
       nw: { x: cropRect.x - offset, y: cropRect.y - offset },
       ne: { x: cropRect.x + cropRect.width - offset, y: cropRect.y - offset },
       sw: { x: cropRect.x - offset, y: cropRect.y + cropRect.height - offset },
-      se: {
-        x: cropRect.x + cropRect.width - offset,
-        y: cropRect.y + cropRect.height - offset,
-      },
+      se: { x: cropRect.x + cropRect.width - offset, y: cropRect.y + cropRect.height - offset },
       n: { x: cropRect.x + cropRect.width / 2 - offset, y: cropRect.y - offset },
-      s: {
-        x: cropRect.x + cropRect.width / 2 - offset,
-        y: cropRect.y + cropRect.height - offset,
-      },
-      e: {
-        x: cropRect.x + cropRect.width - offset,
-        y: cropRect.y + cropRect.height / 2 - offset,
-      },
+      s: { x: cropRect.x + cropRect.width / 2 - offset, y: cropRect.y + cropRect.height - offset },
+      e: { x: cropRect.x + cropRect.width - offset, y: cropRect.y + cropRect.height / 2 - offset },
       w: { x: cropRect.x - offset, y: cropRect.y + cropRect.height / 2 - offset },
     };
 
-    return positions[handle as keyof typeof positions] || { x: 0, y: 0 };
+    return positions[handle] || { x: 0, y: 0 };
   };
 
   const isPointInHandle = (x: number, y: number, handle: string): boolean => {
     const handleRect = getHandleRect(handle);
-    const handleSize = 8;
+    const handleSize = 12;
+    const hitPadding = 6;
     return (
-      x >= handleRect.x &&
-      x <= handleRect.x + handleSize &&
-      y >= handleRect.y &&
-      y <= handleRect.y + handleSize
+      x >= handleRect.x - hitPadding &&
+      x <= handleRect.x + handleSize + hitPadding &&
+      y >= handleRect.y - hitPadding &&
+      y <= handleRect.y + handleSize + hitPadding
     );
+  };
+
+  const isPointInCropArea = (x: number, y: number): boolean => {
+    return (
+      x >= cropRect.x &&
+      x <= cropRect.x + cropRect.width &&
+      y >= cropRect.y &&
+      y <= cropRect.y + cropRect.height
+    );
+  };
+
+  const getHoveredHandle = (x: number, y: number): HandleType => {
+    const handles: HandleType[] = ['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'];
+    for (const handle of handles) {
+      if (isPointInHandle(x, y, handle)) {
+        return handle;
+      }
+    }
+    return null;
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -219,29 +251,22 @@ export function CropTool({ frames, onFramesChange }: CropToolProps) {
     const x = (e.clientX - rect.left) / scale;
     const y = (e.clientY - rect.top) / scale;
 
-    // Check resize handles
-    const handles = ['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'];
-    for (const handle of handles) {
-      if (isPointInHandle(x, y, handle)) {
-        setDragState({
-          isDragging: false,
-          isResizing: true,
-          resizeHandle: handle as DragState['resizeHandle'],
-          startX: x,
-          startY: y,
-          startRect: { ...cropRect },
-        });
-        return;
-      }
+    // Check resize handles first
+    const handle = getHoveredHandle(x, y);
+    if (handle) {
+      setDragState({
+        isDragging: false,
+        isResizing: true,
+        resizeHandle: handle,
+        startX: x,
+        startY: y,
+        startRect: { ...cropRect },
+      });
+      return;
     }
 
     // Check if clicking inside crop rect for dragging
-    if (
-      x >= cropRect.x &&
-      x <= cropRect.x + cropRect.width &&
-      y >= cropRect.y &&
-      y <= cropRect.y + cropRect.height
-    ) {
+    if (isPointInCropArea(x, y)) {
       setDragState({
         isDragging: true,
         isResizing: false,
@@ -255,12 +280,20 @@ export function CropTool({ frames, onFramesChange }: CropToolProps) {
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
-    if (!canvas || (!dragState.isDragging && !dragState.isResizing)) return;
+    if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
     const x = (e.clientX - rect.left) / scale;
     const y = (e.clientY - rect.top) / scale;
 
+    // Update hover state for cursor
+    if (!dragState.isDragging && !dragState.isResizing) {
+      const handle = getHoveredHandle(x, y);
+      setHoveredHandle(handle);
+      setIsOverCropArea(handle === null && isPointInCropArea(x, y));
+    }
+
+    // Handle dragging
     if (dragState.isDragging) {
       const dx = x - dragState.startX;
       const dy = y - dragState.startY;
@@ -320,20 +353,45 @@ export function CropTool({ frames, onFramesChange }: CropToolProps) {
     });
   };
 
+  const handleMouseLeave = () => {
+    handleMouseUp();
+    setHoveredHandle(null);
+    setIsOverCropArea(false);
+  };
+
+  // Determine cursor based on state
+  const getCursor = (): string => {
+    if (dragState.isResizing && dragState.resizeHandle) {
+      return HANDLE_CURSORS[dragState.resizeHandle];
+    }
+    if (dragState.isDragging) {
+      return 'move';
+    }
+    if (hoveredHandle) {
+      return HANDLE_CURSORS[hoveredHandle];
+    }
+    if (isOverCropArea) {
+      return 'move';
+    }
+    return 'crosshair';
+  };
+
   if (!frames[0]) return null;
 
-  return (
-    <div className="space-y-6">
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-200">Crop Tool</h3>
+  const imageWidth = frames[0].imageData.width;
+  const imageHeight = frames[0].imageData.height;
 
+  return (
+    <div className="space-y-4">
+      {/* Controls Row */}
+      <div className="bg-gray-800 rounded-lg p-4 space-y-4">
         {/* Aspect Ratio Presets */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-400">Aspect Ratio</label>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm font-medium text-gray-400">Aspect Ratio:</span>
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => handleAspectRatioChange('free')}
-              className={`px-3 py-1.5 rounded text-sm ${
+              className={`px-3 py-1.5 rounded text-sm transition-colors ${
                 selectedAspect === 'free'
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
@@ -341,181 +399,224 @@ export function CropTool({ frames, onFramesChange }: CropToolProps) {
             >
               Free
             </button>
-            {(Object.keys(ASPECT_RATIOS) as AspectRatioKey[])
-              .filter((key) => ['1:1', '4:3', '16:9', '3:2', '2:1'].includes(key))
-              .map((key) => (
-                <button
-                  key={key}
-                  onClick={() => handleAspectRatioChange(key)}
-                  className={`px-3 py-1.5 rounded text-sm ${
-                    selectedAspect === key
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  }`}
-                >
-                  {key}
-                </button>
-              ))}
+            {(['1:1', '4:3', '16:9', '3:2', '2:1'] as AspectRatioKey[]).map((key) => (
+              <button
+                key={key}
+                onClick={() => handleAspectRatioChange(key)}
+                className={`px-3 py-1.5 rounded text-sm transition-colors ${
+                  selectedAspect === key
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                {key}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Manual Input */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="space-y-1">
-            <label className="text-xs text-gray-400">X</label>
-            <input
-              type="number"
-              value={cropRect.x}
-              onChange={(e) => handleManualInput('x', parseInt(e.target.value) || 0)}
-              className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm text-gray-200"
-            />
+        {/* Manual Input & Actions */}
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="flex gap-2">
+            <div className="space-y-1">
+              <label className="text-xs text-gray-400">X</label>
+              <input
+                type="number"
+                value={Math.round(cropRect.x)}
+                onChange={(e) => handleManualInput('x', parseInt(e.target.value) || 0)}
+                className="w-16 px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm text-gray-200"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-gray-400">Y</label>
+              <input
+                type="number"
+                value={Math.round(cropRect.y)}
+                onChange={(e) => handleManualInput('y', parseInt(e.target.value) || 0)}
+                className="w-16 px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm text-gray-200"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-gray-400">Width</label>
+              <input
+                type="number"
+                value={Math.round(cropRect.width)}
+                onChange={(e) => handleManualInput('width', parseInt(e.target.value) || 10)}
+                className="w-20 px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm text-gray-200"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-gray-400">Height</label>
+              <input
+                type="number"
+                value={Math.round(cropRect.height)}
+                onChange={(e) => handleManualInput('height', parseInt(e.target.value) || 10)}
+                className="w-20 px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm text-gray-200"
+              />
+            </div>
           </div>
-          <div className="space-y-1">
-            <label className="text-xs text-gray-400">Y</label>
-            <input
-              type="number"
-              value={cropRect.y}
-              onChange={(e) => handleManualInput('y', parseInt(e.target.value) || 0)}
-              className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm text-gray-200"
-            />
+          <div className="flex gap-2">
+            <button
+              onClick={handleAutoCrop}
+              className="px-4 py-2 bg-gray-700 text-gray-200 rounded hover:bg-gray-600 text-sm transition-colors"
+            >
+              Auto Crop
+            </button>
+            <button
+              onClick={handleApply}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium transition-colors"
+            >
+              Apply
+            </button>
           </div>
-          <div className="space-y-1">
-            <label className="text-xs text-gray-400">Width</label>
-            <input
-              type="number"
-              value={cropRect.width}
-              onChange={(e) => handleManualInput('width', parseInt(e.target.value) || 10)}
-              className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm text-gray-200"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs text-gray-400">Height</label>
-            <input
-              type="number"
-              value={cropRect.height}
-              onChange={(e) => handleManualInput('height', parseInt(e.target.value) || 10)}
-              className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm text-gray-200"
-            />
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-3">
-          <button
-            onClick={handleAutoCrop}
-            className="px-4 py-2 bg-gray-700 text-gray-200 rounded hover:bg-gray-600 text-sm"
-          >
-            Auto Crop
-          </button>
-          <button
-            onClick={handleApply}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
-          >
-            Apply to All Frames
-          </button>
         </div>
       </div>
 
-      {/* Canvas with Crop Overlay */}
-      <div
-        ref={containerRef}
-        className="bg-gray-800 rounded-lg p-5 flex items-center justify-center"
-      >
-        <div className="relative inline-block">
-          <canvas
-            ref={canvasRef}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            style={{
-              transform: `scale(${scale})`,
-              transformOrigin: 'top left',
-              cursor: dragState.isDragging
-                ? 'move'
-                : dragState.isResizing
-                  ? 'nwse-resize'
-                  : 'crosshair',
-            }}
-            className="border border-gray-700"
-          />
-          {/* Crop overlay */}
-          <svg
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: frames[0].imageData.width * scale,
-              height: frames[0].imageData.height * scale,
-              pointerEvents: 'none',
-            }}
+      {/* Side-by-side: Crop Area and Preview */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Crop Area */}
+        <div className="bg-gray-800 rounded-lg p-4">
+          <div className="text-sm font-medium text-gray-400 mb-3">
+            Original ({imageWidth} x {imageHeight})
+          </div>
+          <div
+            ref={containerRef}
+            className="flex items-center justify-center overflow-hidden"
+            style={{ minHeight: '200px' }}
           >
-            {/* Darkened overlay outside crop */}
-            <rect
-              x={0}
-              y={0}
-              width={frames[0].imageData.width}
-              height={frames[0].imageData.height}
-              fill="black"
-              opacity={0.5}
-            />
-            <rect
-              x={cropRect.x}
-              y={cropRect.y}
-              width={cropRect.width}
-              height={cropRect.height}
-              fill="transparent"
-            />
-
-            {/* Crop rectangle border */}
-            <rect
-              x={cropRect.x}
-              y={cropRect.y}
-              width={cropRect.width}
-              height={cropRect.height}
-              stroke="white"
-              strokeWidth={2}
-              fill="none"
-              strokeDasharray="5,5"
-            />
-
-            {/* Resize handles */}
-            {['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'].map((handle) => {
-              const pos = getHandleRect(handle);
-              return (
+            <div className="relative inline-block">
+              <canvas
+                ref={canvasRef}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseLeave}
+                style={{
+                  transform: `scale(${scale})`,
+                  transformOrigin: 'top left',
+                  cursor: getCursor(),
+                }}
+                className="border border-gray-700"
+              />
+              {/* Crop overlay */}
+              <svg
+                viewBox={`0 0 ${imageWidth} ${imageHeight}`}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: imageWidth * scale,
+                  height: imageHeight * scale,
+                  pointerEvents: 'none',
+                }}
+              >
+                {/* Darkened overlay outside crop - using clip path */}
+                <defs>
+                  <mask id="cropMask">
+                    <rect x={0} y={0} width={imageWidth} height={imageHeight} fill="white" />
+                    <rect
+                      x={cropRect.x}
+                      y={cropRect.y}
+                      width={cropRect.width}
+                      height={cropRect.height}
+                      fill="black"
+                    />
+                  </mask>
+                </defs>
                 <rect
-                  key={handle}
-                  x={pos.x}
-                  y={pos.y}
-                  width={8}
-                  height={8}
-                  fill="white"
-                  stroke="blue"
-                  strokeWidth={1}
-                  style={{ pointerEvents: 'auto', cursor: 'nwse-resize' }}
+                  x={0}
+                  y={0}
+                  width={imageWidth}
+                  height={imageHeight}
+                  fill="black"
+                  opacity={0.6}
+                  mask="url(#cropMask)"
                 />
-              );
-            })}
-          </svg>
+
+                {/* Crop rectangle border */}
+                <rect
+                  x={cropRect.x}
+                  y={cropRect.y}
+                  width={cropRect.width}
+                  height={cropRect.height}
+                  stroke="white"
+                  strokeWidth={2}
+                  fill="none"
+                />
+
+                {/* Rule of thirds grid */}
+                <g stroke="white" strokeWidth={0.5} opacity={0.4}>
+                  <line
+                    x1={cropRect.x + cropRect.width / 3}
+                    y1={cropRect.y}
+                    x2={cropRect.x + cropRect.width / 3}
+                    y2={cropRect.y + cropRect.height}
+                  />
+                  <line
+                    x1={cropRect.x + (cropRect.width * 2) / 3}
+                    y1={cropRect.y}
+                    x2={cropRect.x + (cropRect.width * 2) / 3}
+                    y2={cropRect.y + cropRect.height}
+                  />
+                  <line
+                    x1={cropRect.x}
+                    y1={cropRect.y + cropRect.height / 3}
+                    x2={cropRect.x + cropRect.width}
+                    y2={cropRect.y + cropRect.height / 3}
+                  />
+                  <line
+                    x1={cropRect.x}
+                    y1={cropRect.y + (cropRect.height * 2) / 3}
+                    x2={cropRect.x + cropRect.width}
+                    y2={cropRect.y + (cropRect.height * 2) / 3}
+                  />
+                </g>
+
+                {/* Resize handles */}
+                {(['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'] as const).map((handle) => {
+                  const pos = getHandleRect(handle);
+                  const isHovered = hoveredHandle === handle;
+                  const isActive = dragState.resizeHandle === handle;
+                  return (
+                    <rect
+                      key={handle}
+                      x={pos.x}
+                      y={pos.y}
+                      width={12}
+                      height={12}
+                      fill={isActive ? '#3b82f6' : isHovered ? '#60a5fa' : 'white'}
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                      rx={2}
+                    />
+                  );
+                })}
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Preview */}
+        <div className="bg-gray-800 rounded-lg p-4">
+          <div className="text-sm font-medium text-gray-400 mb-3">
+            Preview ({Math.round(cropRect.width)} x {Math.round(cropRect.height)})
+          </div>
+          <div
+            className="flex items-center justify-center overflow-hidden"
+            style={{ minHeight: '200px' }}
+          >
+            {previewUrl ? (
+              <img
+                src={previewUrl}
+                alt="Crop preview"
+                className="max-w-full max-h-80 object-contain border border-gray-700"
+              />
+            ) : (
+              <div className="text-gray-500">Loading preview...</div>
+            )}
+          </div>
         </div>
       </div>
-
-      {/* Preview */}
-      {previewUrl && (
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-400">Preview</label>
-          <div className="bg-gray-800 rounded-lg p-4 flex items-center justify-center">
-            <img
-              src={previewUrl}
-              alt="Crop preview"
-              className="max-w-full max-h-64 object-contain"
-            />
-          </div>
-          <p className="text-xs text-gray-500 text-center">
-            {cropRect.width} x {cropRect.height} pixels
-          </p>
-        </div>
-      )}
     </div>
   );
 }

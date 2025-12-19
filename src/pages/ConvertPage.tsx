@@ -179,7 +179,7 @@ export function ConvertPage() {
       <header className="text-center mb-8">
         <h1 className="text-3xl font-bold mb-2">Convert to GIF</h1>
         <p className="text-gray-400">
-          Convert WebP, GIF, and videos to optimized GIFs with target size control
+          Convert images and videos to optimized GIFs with target size control
         </p>
       </header>
 

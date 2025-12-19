@@ -4,8 +4,8 @@ import { ResizeTool } from '../components/tools/ResizeTool';
 export function ResizePage() {
   return (
     <ToolPageWrapper
-      title="Resize GIF"
-      description="Scale your GIF to specific dimensions with quality control"
+      title="Resize"
+      description="Scale images or videos to any size • Export as GIF"
     >
       {({ frames, onFramesChange, originalWidth, originalHeight }) => (
         <ResizeTool

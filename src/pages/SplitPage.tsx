@@ -4,8 +4,8 @@ import { SplitTool } from '../components/tools/SplitTool';
 export function SplitPage() {
   return (
     <ToolPageWrapper
-      title="Split GIF"
-      description="Extract individual frames from your GIF as images"
+      title="Split Frames"
+      description="Extract individual frames as PNG images"
     >
       {({ frames }) => <SplitTool frames={frames} />}
     </ToolPageWrapper>

@@ -8,12 +8,12 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { path: '/', label: 'Convert', icon: '🔄' },
-  { path: '/crop', label: 'Crop', icon: '✂️' },
-  { path: '/resize', label: 'Resize', icon: '📐' },
-  { path: '/speed', label: 'Speed', icon: '⏱️' },
-  { path: '/reverse', label: 'Reverse', icon: '↩️' },
-  { path: '/rotate', label: 'Rotate', icon: '🔃' },
-  { path: '/split', label: 'Split', icon: '📑' },
+  { path: '/crop-gif', label: 'Crop', icon: '✂️' },
+  { path: '/resize-gif', label: 'Resize', icon: '📐' },
+  { path: '/change-gif-speed', label: 'Speed', icon: '⏱️' },
+  { path: '/reverse-gif', label: 'Reverse', icon: '↩️' },
+  { path: '/rotate-flip-gif', label: 'Rotate', icon: '🔃' },
+  { path: '/gif-to-frames', label: 'Split', icon: '📑' },
 ];
 
 export function Navigation() {
