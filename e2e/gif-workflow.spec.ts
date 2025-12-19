@@ -477,7 +477,7 @@ test.describe('GIF Workflow E2E Tests', () => {
     test('should navigate to split page', async ({ page }) => {
       await page.goto('./gif-to-frames')
 
-      await expect(page.locator('h1')).toContainText('Split')
+      await expect(page.locator('h1')).toContainText('Frames')
     })
 
     test('should upload GIF and show split controls', async ({ page }) => {
@@ -599,7 +599,7 @@ test.describe('GIF Workflow E2E Tests', () => {
 
       await page.click('text=Split')
       await expect(page).toHaveURL(/\/gif-to-frames/)
-      await expect(page.locator('h1')).toContainText('Split')
+      await expect(page.locator('h1')).toContainText('Frames')
 
       await page.click('text=Convert')
       await expect(page).toHaveURL(/smartgif\/?$/)
