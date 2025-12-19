@@ -3,216 +3,93 @@
  * Tests frame extraction, ZIP creation, and downloads using real test image
  */
 
-import { frameToBlob } from './SplitTool';
-import type { Frame } from '../../types';
+import { describe, it, expect } from 'vitest'
+import { frameToBlob } from '../../lib/splitUtils'
+import { createTestFrame, createMockFrames } from '../../test/testUtils'
+import type { Frame } from '../../types'
 
-/**
- * Create a test frame with ImageData
- */
-function createTestFrame(
-  width: number,
-  height: number,
-  color: [number, number, number],
-  delay: number
-): Frame {
-  const imageData = new ImageData(width, height);
-  const [r, g, b] = color;
+describe('SplitTool', () => {
+  describe('frameToBlob', () => {
+    it('should convert frame to PNG blob', async () => {
+      const frame = createTestFrame(100, 100, [255, 0, 0, 255], 100)
+      const blob = await frameToBlob(frame)
 
-  // Fill with solid color
-  for (let i = 0; i < imageData.data.length; i += 4) {
-    imageData.data[i] = r;
-    imageData.data[i + 1] = g;
-    imageData.data[i + 2] = b;
-    imageData.data[i + 3] = 255; // alpha
-  }
+      expect(blob.type).toBe('image/png')
+      expect(blob.size).toBeGreaterThan(0)
+    })
 
-  return { imageData, delay };
-}
+    it('should create non-empty blob', async () => {
+      const frame = createTestFrame(100, 100, [255, 0, 0, 255], 100)
+      const blob = await frameToBlob(frame)
 
-/**
- * Test frameToBlob conversion
- */
-async function testFrameToBlob(): Promise<void> {
-  console.log('Testing frameToBlob...');
+      expect(blob.size).toBeGreaterThan(0)
+    })
+  })
 
-  const frame = createTestFrame(100, 100, [255, 0, 0], 100);
-  const blob = await frameToBlob(frame);
+  describe('frame extraction', () => {
+    it('should extract frame from image data', async () => {
+      const testFrame = createTestFrame(200, 200, [128, 128, 128, 255], 50)
+      const blob = await frameToBlob(testFrame)
 
-  // Verify blob properties
-  if (blob.type !== 'image/png') {
-    throw new Error(`Expected PNG, got ${blob.type}`);
-  }
+      expect(blob.size).toBeGreaterThan(0)
+    })
+  })
 
-  if (blob.size === 0) {
-    throw new Error('Blob is empty');
-  }
+  describe('individual frame download', () => {
+    it('should create downloadable blob from frame', async () => {
+      const frame = createTestFrame(100, 100, [255, 128, 0, 255], 150)
+      const blob = await frameToBlob(frame)
 
-  console.log(`✓ frameToBlob created PNG blob (${blob.size} bytes)`);
-}
+      expect(blob).toBeInstanceOf(Blob)
+      expect(blob.size).toBeGreaterThan(0)
+    })
+  })
 
-/**
- * Test ZIP creation with multiple frames
- */
-async function testDownloadFramesAsZip(): Promise<void> {
-  console.log('Testing downloadFramesAsZip...');
+  describe('batch frame processing', () => {
+    it('should process multiple frames', async () => {
+      const frames: Frame[] = Array.from({ length: 10 }, (_, i) =>
+        createTestFrame(50, 50, [i * 25, 128, 255 - i * 25, 255], 100)
+      )
 
-  // Create test frames
-  createTestFrame(50, 50, [255, 0, 0], 100); // red
-  createTestFrame(50, 50, [0, 255, 0], 100); // green
-  createTestFrame(50, 50, [0, 0, 255], 100); // blue
+      const blobs = await Promise.all(frames.map(frame => frameToBlob(frame)))
 
-  // Note: downloadFramesAsZip uses saveAs which triggers browser download
-  // In a test environment, we'll verify the ZIP creation logic separately
-  console.log('✓ ZIP creation logic validated (would download 3 frames)');
-}
+      expect(blobs).toHaveLength(frames.length)
 
-/**
- * Test frame extraction with actual image data
- */
-async function testFrameExtraction(): Promise<void> {
-  console.log('Testing frame extraction from real image...');
+      for (const blob of blobs) {
+        expect(blob.size).toBeGreaterThan(0)
+      }
+    })
 
-  // Load test image
-  const testImagePath = '/Users/jeremywatt/smartgif/test-assets/kamal-quake-demo.webp';
+    it('should handle batch processing with mock frames', async () => {
+      const frames = createMockFrames(5, 100)
+      const blobs = await Promise.all(frames.map(frame => frameToBlob(frame)))
 
-  try {
-    // In a real browser environment, we would use fetch + decoder
-    // For this test, we'll verify the conversion logic works
-    const testFrame = createTestFrame(200, 200, [128, 128, 128], 50);
-    const blob = await frameToBlob(testFrame);
+      expect(blobs).toHaveLength(5)
 
-    if (blob.size === 0) {
-      throw new Error('Failed to extract frame');
-    }
+      for (const blob of blobs) {
+        expect(blob.size).toBeGreaterThan(0)
+      }
+    })
+  })
 
-    console.log(`✓ Frame extraction validated (${blob.size} bytes)`);
-  } catch (error) {
-    console.log(`Note: Test image at ${testImagePath} - run in browser for full test`);
-    console.log('✓ Frame extraction logic validated');
-  }
-}
+  describe('frame metadata preservation', () => {
+    it('should preserve frame dimensions and delay', async () => {
+      const testCases = [
+        { width: 100, height: 100, delay: 50 },
+        { width: 200, height: 150, delay: 100 },
+        { width: 64, height: 64, delay: 33 },
+      ]
 
-/**
- * Test individual frame download
- */
-async function testIndividualFrameDownload(): Promise<void> {
-  console.log('Testing individual frame download...');
+      for (const { width, height, delay } of testCases) {
+        const frame = createTestFrame(width, height, [255, 255, 255, 255], delay)
 
-  const frame = createTestFrame(100, 100, [255, 128, 0], 150);
-  const blob = await frameToBlob(frame);
+        expect(frame.imageData.width).toBe(width)
+        expect(frame.imageData.height).toBe(height)
+        expect(frame.delay).toBe(delay)
 
-  // Verify blob can be created for download
-  if (!(blob instanceof Blob)) {
-    throw new Error('Failed to create downloadable blob');
-  }
-
-  console.log(`✓ Individual frame download validated (${blob.size} bytes)`);
-}
-
-/**
- * Test batch frame processing
- */
-async function testBatchFrameProcessing(): Promise<void> {
-  console.log('Testing batch frame processing...');
-
-  const frames: Frame[] = Array.from({ length: 10 }, (_, i) =>
-    createTestFrame(50, 50, [i * 25, 128, 255 - i * 25], 100)
-  );
-
-  // Convert all frames to blobs
-  const blobs = await Promise.all(frames.map(frame => frameToBlob(frame)));
-
-  if (blobs.length !== frames.length) {
-    throw new Error(`Expected ${frames.length} blobs, got ${blobs.length}`);
-  }
-
-  for (const blob of blobs) {
-    if (blob.size === 0) {
-      throw new Error('Empty blob in batch');
-    }
-  }
-
-  console.log(`✓ Batch processing validated (${blobs.length} frames)`);
-}
-
-/**
- * Test frame metadata preservation
- */
-async function testFrameMetadata(): Promise<void> {
-  console.log('Testing frame metadata preservation...');
-
-  const testCases = [
-    { width: 100, height: 100, delay: 50 },
-    { width: 200, height: 150, delay: 100 },
-    { width: 64, height: 64, delay: 33 },
-  ];
-
-  for (const { width, height, delay } of testCases) {
-    const frame = createTestFrame(width, height, [255, 255, 255], delay);
-
-    // Verify dimensions are preserved
-    if (frame.imageData.width !== width || frame.imageData.height !== height) {
-      throw new Error(`Dimensions mismatch: expected ${width}x${height}`);
-    }
-
-    // Verify delay is preserved
-    if (frame.delay !== delay) {
-      throw new Error(`Delay mismatch: expected ${delay}ms`);
-    }
-
-    const blob = await frameToBlob(frame);
-    if (blob.size === 0) {
-      throw new Error('Failed to create blob with metadata');
-    }
-  }
-
-  console.log('✓ Frame metadata preserved correctly');
-}
-
-/**
- * Run all tests
- */
-async function runAllTests(): Promise<void> {
-  console.log('\n=== SplitTool Tests ===\n');
-
-  const tests = [
-    testFrameToBlob,
-    testDownloadFramesAsZip,
-    testFrameExtraction,
-    testIndividualFrameDownload,
-    testBatchFrameProcessing,
-    testFrameMetadata,
-  ];
-
-  let passed = 0;
-  let failed = 0;
-
-  for (const test of tests) {
-    try {
-      await test();
-      passed++;
-    } catch (error) {
-      console.error(`✗ ${test.name} failed:`, error);
-      failed++;
-    }
-  }
-
-  console.log(`\n=== Test Results ===`);
-  console.log(`Passed: ${passed}/${tests.length}`);
-  console.log(`Failed: ${failed}/${tests.length}`);
-
-  if (failed > 0) {
-    throw new Error(`${failed} test(s) failed`);
-  }
-}
-
-// Export for test runners
-export { runAllTests, testFrameToBlob, testFrameExtraction };
-
-// Run tests if executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  runAllTests().catch(error => {
-    console.error('Test suite failed:', error);
-    process.exit(1);
-  });
-}
+        const blob = await frameToBlob(frame)
+        expect(blob.size).toBeGreaterThan(0)
+      }
+    })
+  })
+})

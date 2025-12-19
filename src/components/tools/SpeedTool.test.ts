@@ -1,320 +1,202 @@
 /**
  * Speed Tool Tests
  * Tests speed multiplier and uniform delay functionality
- *
- * Run with: npx tsx src/components/tools/SpeedTool.test.ts
- * Or in browser console for real WebP testing
  */
 
+import { describe, it, expect } from 'vitest'
 import {
   adjustSpeed,
   setUniformDelay,
   getTotalDuration,
   getAverageFps,
-} from '../../lib/frameUtils';
-import type { Frame } from '../../types';
+} from '../../lib/frameUtils'
+import { createTestFrame, createMockFrames } from '../../test/testUtils'
 
-/**
- * Create a test frame with ImageData
- */
-function createTestFrame(
-  width: number,
-  height: number,
-  color: [number, number, number],
-  delay: number
-): Frame {
-  // For Node.js environment, create a minimal ImageData-like object
-  const size = width * height * 4;
-  const data = new Uint8ClampedArray(size);
-  const [r, g, b] = color;
+describe('SpeedTool', () => {
+  describe('adjustSpeed', () => {
+    it('should double speed with 2x multiplier', () => {
+      const frames = createMockFrames(5, 100)
+      const originalDuration = getTotalDuration(frames)
 
-  // Fill with solid color
-  for (let i = 0; i < data.length; i += 4) {
-    data[i] = r;
-    data[i + 1] = g;
-    data[i + 2] = b;
-    data[i + 3] = 255; // alpha
-  }
+      const faster = adjustSpeed(frames, 2)
+      const fasterDuration = getTotalDuration(faster)
 
-  // Create ImageData-like object
-  const imageData = {
-    data,
-    width,
-    height,
-    colorSpace: 'srgb' as PredefinedColorSpace,
-  } as ImageData;
+      expect(fasterDuration).toBeCloseTo(originalDuration / 2, -1)
+    })
 
-  return { imageData, delay };
-}
+    it('should halve speed with 0.5x multiplier', () => {
+      const frames = createMockFrames(5, 100)
+      const originalDuration = getTotalDuration(frames)
 
-/**
- * Create mock frames for testing
- */
-function createMockFrames(count: number, delay: number): Frame[] {
-  return Array.from({ length: count }, (_, i) =>
-    createTestFrame(100, 100, [i * 50, i * 30, i * 20], delay)
-  );
-}
+      const slower = adjustSpeed(frames, 0.5)
+      const slowerDuration = getTotalDuration(slower)
 
-/**
- * Test adjustSpeed with multipliers
- */
-async function testAdjustSpeed(): Promise<void> {
-  console.log('\n=== Testing adjustSpeed ===');
+      expect(slowerDuration).toBeCloseTo(originalDuration * 2, -1)
+    })
 
-  const frames = createMockFrames(5, 100);
-  const originalDuration = getTotalDuration(frames);
-  console.log(`Original duration: ${originalDuration}ms`);
+    it('should preserve duration with 1x multiplier', () => {
+      const frames = createMockFrames(5, 100)
+      const originalDuration = getTotalDuration(frames)
 
-  // Test 2x speed (faster)
-  const faster = adjustSpeed(frames, 2);
-  const fasterDuration = getTotalDuration(faster);
-  console.log(`2x speed duration: ${fasterDuration}ms (expected ~${originalDuration / 2}ms)`);
-  if (Math.abs(fasterDuration - originalDuration / 2) > frames.length) {
-    throw new Error('2x speed adjustment failed');
-  }
-  console.log('✓ 2x speed multiplier works correctly');
+      const same = adjustSpeed(frames, 1)
+      const sameDuration = getTotalDuration(same)
 
-  // Test 0.5x speed (slower)
-  const slower = adjustSpeed(frames, 0.5);
-  const slowerDuration = getTotalDuration(slower);
-  console.log(`0.5x speed duration: ${slowerDuration}ms (expected ~${originalDuration / 0.5}ms)`);
-  if (Math.abs(slowerDuration - originalDuration / 0.5) > frames.length) {
-    throw new Error('0.5x speed adjustment failed');
-  }
-  console.log('✓ 0.5x speed multiplier works correctly');
+      expect(sameDuration).toBe(originalDuration)
+    })
 
-  // Test 1x speed (no change)
-  const same = adjustSpeed(frames, 1);
-  const sameDuration = getTotalDuration(same);
-  if (sameDuration !== originalDuration) {
-    throw new Error('1x speed should not change duration');
-  }
-  console.log('✓ 1x speed multiplier preserves duration');
+    it('should enforce minimum delay of 10ms', () => {
+      const frames = createMockFrames(5, 5)
+      const adjusted = adjustSpeed(frames, 10)
 
-  // Test minimum delay enforcement
-  const tinyDelay = frames.map(f => ({ ...f, delay: 5 }));
-  const adjusted = adjustSpeed(tinyDelay, 10);
-  const hasMinDelay = adjusted.every(f => f.delay >= 10);
-  if (!hasMinDelay) {
-    throw new Error('Minimum delay of 10ms not enforced');
-  }
-  console.log('✓ Minimum delay of 10ms enforced');
+      const allHaveMinDelay = adjusted.every(f => f.delay >= 10)
+      expect(allHaveMinDelay).toBe(true)
+    })
 
-  // Test frame count preservation
-  const presets = [0.25, 0.5, 1, 1.5, 2, 4];
-  for (const preset of presets) {
-    const result = adjustSpeed(frames, preset);
-    if (result.length !== frames.length) {
-      throw new Error(`Frame count not preserved for ${preset}x speed`);
-    }
-  }
-  console.log('✓ Frame count preserved across all presets');
-}
+    it('should preserve frame count across all presets', () => {
+      const frames = createMockFrames(5, 100)
+      const presets = [0.25, 0.5, 1, 1.5, 2, 4]
 
-/**
- * Test setUniformDelay
- */
-async function testSetUniformDelay(): Promise<void> {
-  console.log('\n=== Testing setUniformDelay ===');
+      for (const preset of presets) {
+        const result = adjustSpeed(frames, preset)
+        expect(result.length).toBe(frames.length)
+      }
+    })
+  })
 
-  const frames = createMockFrames(10, 100);
+  describe('setUniformDelay', () => {
+    it('should set all frames to the same delay', () => {
+      const frames = createMockFrames(10, 100)
+      const uniformDelay = 50
 
-  // Test uniform delay
-  const uniformDelay = 50;
-  const uniform = setUniformDelay(frames, uniformDelay);
+      const uniform = setUniformDelay(frames, uniformDelay)
 
-  const allSameDelay = uniform.every(f => f.delay === uniformDelay);
-  if (!allSameDelay) {
-    throw new Error('Not all frames have uniform delay');
-  }
-  console.log(`✓ All frames set to ${uniformDelay}ms delay`);
+      const allSameDelay = uniform.every(f => f.delay === uniformDelay)
+      expect(allSameDelay).toBe(true)
+    })
 
-  // Test duration calculation
-  const totalDuration = getTotalDuration(uniform);
-  const expectedDuration = frames.length * uniformDelay;
-  if (totalDuration !== expectedDuration) {
-    throw new Error('Duration calculation incorrect for uniform delay');
-  }
-  console.log(`✓ Total duration: ${totalDuration}ms (${frames.length} × ${uniformDelay}ms)`);
+    it('should calculate correct total duration', () => {
+      const frames = createMockFrames(10, 100)
+      const uniformDelay = 50
 
-  // Test minimum delay
-  const belowMin = setUniformDelay(frames, 5);
-  const hasMinDelay = belowMin.every(f => f.delay === 10);
-  if (!hasMinDelay) {
-    throw new Error('Minimum delay not enforced for uniform delay');
-  }
-  console.log('✓ Minimum delay enforced for values < 10ms');
+      const uniform = setUniformDelay(frames, uniformDelay)
+      const totalDuration = getTotalDuration(uniform)
 
-  // Test large delay
-  const largeDelay = 5000;
-  const large = setUniformDelay(frames, largeDelay);
-  const hasLargeDelay = large.every(f => f.delay === largeDelay);
-  if (!hasLargeDelay) {
-    throw new Error('Large delay not applied correctly');
-  }
-  console.log(`✓ Large delay (${largeDelay}ms) applied correctly`);
-}
+      expect(totalDuration).toBe(frames.length * uniformDelay)
+    })
 
-/**
- * Test getTotalDuration
- */
-async function testGetTotalDuration(): Promise<void> {
-  console.log('\n=== Testing getTotalDuration ===');
+    it('should enforce minimum delay of 10ms', () => {
+      const frames = createMockFrames(10, 100)
+      const belowMin = setUniformDelay(frames, 5)
 
-  // Test with specific delays
-  const frames: Frame[] = [
-    createTestFrame(100, 100, [255, 0, 0], 100),
-    createTestFrame(100, 100, [0, 255, 0], 200),
-    createTestFrame(100, 100, [0, 0, 255], 150),
-  ];
+      const hasMinDelay = belowMin.every(f => f.delay === 10)
+      expect(hasMinDelay).toBe(true)
+    })
 
-  const duration = getTotalDuration(frames);
-  const expected = 450;
-  if (duration !== expected) {
-    throw new Error(`Expected ${expected}ms, got ${duration}ms`);
-  }
-  console.log(`✓ Correct duration: ${duration}ms`);
+    it('should apply large delays correctly', () => {
+      const frames = createMockFrames(10, 100)
+      const largeDelay = 5000
 
-  // Test empty frames
-  const emptyDuration = getTotalDuration([]);
-  if (emptyDuration !== 0) {
-    throw new Error('Empty frames should return 0 duration');
-  }
-  console.log('✓ Empty frames return 0 duration');
+      const large = setUniformDelay(frames, largeDelay)
 
-  // Test single frame
-  const singleFrame = [createTestFrame(100, 100, [128, 128, 128], 100)];
-  const singleDuration = getTotalDuration(singleFrame);
-  if (singleDuration !== 100) {
-    throw new Error('Single frame duration incorrect');
-  }
-  console.log('✓ Single frame duration correct');
-}
+      const hasLargeDelay = large.every(f => f.delay === largeDelay)
+      expect(hasLargeDelay).toBe(true)
+    })
+  })
 
-/**
- * Test getAverageFps
- */
-async function testGetAverageFps(): Promise<void> {
-  console.log('\n=== Testing getAverageFps ===');
+  describe('getTotalDuration', () => {
+    it('should calculate correct duration for mixed delays', () => {
+      const frames = [
+        createTestFrame(100, 100, [255, 0, 0, 255], 100),
+        createTestFrame(100, 100, [0, 255, 0, 255], 200),
+        createTestFrame(100, 100, [0, 0, 255, 255], 150),
+      ]
 
-  // Test 10 fps (100ms per frame)
-  const frames10fps = createMockFrames(10, 100);
-  const fps10 = getAverageFps(frames10fps);
-  if (fps10 !== 10) {
-    throw new Error(`Expected 10 fps, got ${fps10} fps`);
-  }
-  console.log('✓ 10 fps calculated correctly');
+      const duration = getTotalDuration(frames)
+      expect(duration).toBe(450)
+    })
 
-  // Test variable delays
-  const varFrames: Frame[] = [
-    createTestFrame(100, 100, [255, 0, 0], 100), // 10 fps
-    createTestFrame(100, 100, [0, 255, 0], 50),  // 20 fps
-    createTestFrame(100, 100, [0, 0, 255], 200), // 5 fps
-  ];
-  const varFps = getAverageFps(varFrames);
-  // Average delay = 350/3 = 116.67ms = 8.57 fps, rounds to 9
-  if (varFps !== 9) {
-    throw new Error(`Expected 9 fps for variable delays, got ${varFps} fps`);
-  }
-  console.log('✓ Variable delay FPS calculated correctly');
+    it('should return 0 for empty frames array', () => {
+      const duration = getTotalDuration([])
+      expect(duration).toBe(0)
+    })
 
-  // Test fast animation (~60 fps)
-  const fastFrames = createMockFrames(10, 16);
-  const fastFps = getAverageFps(fastFrames);
-  const expectedFastFps = Math.round(1000 / 16);
-  if (fastFps !== expectedFastFps) {
-    throw new Error(`Expected ${expectedFastFps} fps, got ${fastFps} fps`);
-  }
-  console.log(`✓ Fast animation FPS calculated correctly: ${fastFps} fps`);
-}
+    it('should return correct duration for single frame', () => {
+      const frames = [createTestFrame(100, 100, [128, 128, 128, 255], 100)]
+      const duration = getTotalDuration(frames)
+      expect(duration).toBe(100)
+    })
+  })
 
-/**
- * Test Speed Tool integration scenarios
- */
-async function testSpeedToolIntegration(): Promise<void> {
-  console.log('\n=== Testing Speed Tool Integration ===');
+  describe('getAverageFps', () => {
+    it('should calculate 10 fps for 100ms delay', () => {
+      const frames = createMockFrames(10, 100)
+      const fps = getAverageFps(frames)
+      expect(fps).toBe(10)
+    })
 
-  const frames = createMockFrames(10, 100);
-  const originalDuration = getTotalDuration(frames);
+    it('should calculate correct fps for variable delays', () => {
+      const frames = [
+        createTestFrame(100, 100, [255, 0, 0, 255], 100),
+        createTestFrame(100, 100, [0, 255, 0, 255], 50),
+        createTestFrame(100, 100, [0, 0, 255, 255], 200),
+      ]
+      const fps = getAverageFps(frames)
+      // Average delay = 350/3 = 116.67ms = ~8.57 fps, rounds to 9
+      expect(fps).toBe(9)
+    })
 
-  // Test consistency across multipliers
-  const multipliers = [0.25, 0.5, 1, 1.5, 2, 4];
-  for (const multiplier of multipliers) {
-    const adjusted = adjustSpeed(frames, multiplier);
-    const newDuration = getTotalDuration(adjusted);
-    const expectedDuration = originalDuration / multiplier;
-    const tolerance = frames.length; // Allow rounding error per frame
+    it('should calculate correct fps for fast animation (~60fps)', () => {
+      const frames = createMockFrames(10, 16)
+      const fps = getAverageFps(frames)
+      const expectedFps = Math.round(1000 / 16)
+      expect(fps).toBe(expectedFps)
+    })
+  })
 
-    if (Math.abs(newDuration - expectedDuration) > tolerance) {
-      throw new Error(
-        `Multiplier ${multiplier}x: expected ${expectedDuration}ms, got ${newDuration}ms`
-      );
-    }
-  }
-  console.log('✓ Speed multipliers maintain consistent duration ratios');
+  describe('integration', () => {
+    it('should maintain consistent duration ratios across multipliers', () => {
+      const frames = createMockFrames(10, 100)
+      const originalDuration = getTotalDuration(frames)
+      const multipliers = [0.25, 0.5, 1, 1.5, 2, 4]
 
-  // Test switching between modes
-  const sped = adjustSpeed(frames, 2);
-  const spedDuration = getTotalDuration(sped);
+      for (const multiplier of multipliers) {
+        const adjusted = adjustSpeed(frames, multiplier)
+        const newDuration = getTotalDuration(adjusted)
+        const expectedDuration = originalDuration / multiplier
 
-  const uniform = setUniformDelay(sped, 50);
-  const uniformDuration = getTotalDuration(uniform);
+        expect(newDuration).toBeCloseTo(expectedDuration, -1)
+      }
+    })
 
-  if (uniformDuration !== sped.length * 50) {
-    throw new Error('Uniform delay after speed adjustment failed');
-  }
-  console.log('✓ Can switch from speed multiplier to uniform delay');
+    it('should allow switching from speed multiplier to uniform delay', () => {
+      const frames = createMockFrames(10, 100)
+      const sped = adjustSpeed(frames, 2)
+      const uniform = setUniformDelay(sped, 50)
 
-  // Test frame quality preservation
-  const adjusted = adjustSpeed(frames, 1.5);
-  for (let i = 0; i < adjusted.length; i++) {
-    if (adjusted[i].imageData.width !== frames[i].imageData.width ||
-        adjusted[i].imageData.height !== frames[i].imageData.height ||
-        adjusted[i].imageData.data.length !== frames[i].imageData.data.length) {
-      throw new Error('Frame quality not preserved');
-    }
-  }
-  console.log('✓ Frame quality preserved after speed adjustment');
+      expect(getTotalDuration(uniform)).toBe(sped.length * 50)
+    })
 
-  // Test rapid speed changes
-  let current = frames;
-  const changes = [2, 0.5, 1.5, 0.75, 1];
-  for (const change of changes) {
-    current = adjustSpeed(current, change);
-    if (current.length !== frames.length) {
-      throw new Error('Frame count changed during rapid adjustments');
-    }
-    if (getTotalDuration(current) <= 0) {
-      throw new Error('Invalid duration after rapid adjustments');
-    }
-  }
-  console.log('✓ Handles rapid speed changes correctly');
-}
+    it('should preserve frame quality after speed adjustment', () => {
+      const frames = createMockFrames(5, 100)
+      const adjusted = adjustSpeed(frames, 1.5)
 
-/**
- * Run all tests
- */
-async function runAllTests(): Promise<void> {
-  console.log('🧪 Starting Speed Tool Tests...\n');
+      for (let i = 0; i < adjusted.length; i++) {
+        expect(adjusted[i].imageData.width).toBe(frames[i].imageData.width)
+        expect(adjusted[i].imageData.height).toBe(frames[i].imageData.height)
+        expect(adjusted[i].imageData.data.length).toBe(frames[i].imageData.data.length)
+      }
+    })
 
-  try {
-    await testAdjustSpeed();
-    await testSetUniformDelay();
-    await testGetTotalDuration();
-    await testGetAverageFps();
-    await testSpeedToolIntegration();
+    it('should handle rapid speed changes correctly', () => {
+      const frames = createMockFrames(10, 100)
+      let current = frames
+      const changes = [2, 0.5, 1.5, 0.75, 1]
 
-    console.log('\n✅ All tests passed!\n');
-  } catch (error) {
-    console.error('\n❌ Test failed:', error);
-    process.exit(1);
-  }
-}
-
-// Only run if executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  runAllTests();
-}
-
-export { runAllTests };
+      for (const change of changes) {
+        current = adjustSpeed(current, change)
+        expect(current.length).toBe(frames.length)
+        expect(getTotalDuration(current)).toBeGreaterThan(0)
+      }
+    })
+  })
+})

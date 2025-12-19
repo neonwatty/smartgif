@@ -1,257 +1,174 @@
 /**
  * Test suite for ReverseTool component
- * Run with: npx tsx src/components/tools/ReverseTool.test.ts
+ * Tests the reverseFrames and pingPongFrames functions from frameUtils
  */
 
-import { reverseFrames, pingPongFrames, getTotalDuration } from '../../lib/frameUtils';
-import type { Frame } from '../../types';
+import { describe, it, expect } from 'vitest'
+import { reverseFrames, pingPongFrames, getTotalDuration } from '../../lib/frameUtils'
+import { createTestFrame, createMockFrames } from '../../test/testUtils'
 
-// Mock ImageData for Node.js environment
-class MockImageData {
-  data: Uint8ClampedArray;
-  width: number;
-  height: number;
+describe('reverseFrames', () => {
+  it('should reverse the order of frames', () => {
+    const frames = [
+      createTestFrame(100, 100, [255, 0, 0, 255], 100),
+      createTestFrame(100, 100, [0, 255, 0, 255], 110),
+      createTestFrame(100, 100, [0, 0, 255, 255], 120),
+      createTestFrame(100, 100, [255, 255, 0, 255], 130),
+      createTestFrame(100, 100, [255, 0, 255, 255], 140),
+    ]
 
-  constructor(data: Uint8ClampedArray, width: number, height: number) {
-    this.data = data;
-    this.width = width;
-    this.height = height;
-  }
-}
+    const reversed = reverseFrames(frames)
 
-// Use native ImageData if available (browser), otherwise use mock
-const ImageDataConstructor = typeof ImageData !== 'undefined' ? ImageData : MockImageData;
+    expect(reversed.length).toBe(frames.length)
+    expect(reversed[0].delay).toBe(frames[4].delay)
+    expect(reversed[4].delay).toBe(frames[0].delay)
+  })
 
-// Test utilities
-function createTestFrame(width: number, height: number, delay: number): Frame {
-  const data = new Uint8ClampedArray(width * height * 4);
-  // Fill with some test data
-  for (let i = 0; i < data.length; i += 4) {
-    data[i] = 255;     // R
-    data[i + 1] = 0;   // G
-    data[i + 2] = 0;   // B
-    data[i + 3] = 255; // A
-  }
+  it('should handle a single frame', () => {
+    const singleFrame = [createTestFrame(100, 100, [255, 0, 0, 255], 100)]
+    const reversed = reverseFrames(singleFrame)
 
-  const imageData = new ImageDataConstructor(data, width, height) as ImageData;
-  return { imageData, delay };
-}
+    expect(reversed.length).toBe(1)
+    expect(reversed[0].delay).toBe(singleFrame[0].delay)
+  })
 
-function createTestFrames(count: number, width = 100, height = 100): Frame[] {
-  const frames: Frame[] = [];
-  for (let i = 0; i < count; i++) {
-    // Vary delay to test duration calculations
-    const delay = 100 + i * 10;
-    frames.push(createTestFrame(width, height, delay));
-  }
-  return frames;
-}
+  it('should not modify the original array', () => {
+    const frames = [
+      createTestFrame(100, 100, [255, 0, 0, 255], 100),
+      createTestFrame(100, 100, [0, 255, 0, 255], 110),
+      createTestFrame(100, 100, [0, 0, 255, 255], 120),
+    ]
+    const originalFirstDelay = frames[0].delay
 
-// Test helpers
-function assertEqual(actual: any, expected: any, message: string) {
-  if (actual !== expected) {
-    throw new Error(`${message}: expected ${expected}, got ${actual}`);
-  }
-}
+    reverseFrames(frames)
 
-function assertArrayEqual(actual: any[], expected: any[], message: string) {
-  if (actual.length !== expected.length) {
-    throw new Error(`${message}: length mismatch - expected ${expected.length}, got ${actual.length}`);
-  }
-  for (let i = 0; i < actual.length; i++) {
-    if (actual[i] !== expected[i]) {
-      throw new Error(`${message}: at index ${i} - expected ${expected[i]}, got ${actual[i]}`);
-    }
-  }
-}
+    expect(frames[0].delay).toBe(originalFirstDelay)
+  })
+})
 
-// Test Suite
-function testReverseFrames() {
-  console.log('\n=== Test: reverseFrames ===');
+describe('pingPongFrames', () => {
+  it('should create a ping-pong sequence', () => {
+    const frames = [
+      createTestFrame(100, 100, [255, 0, 0, 255], 100),
+      createTestFrame(100, 100, [0, 255, 0, 255], 110),
+      createTestFrame(100, 100, [0, 0, 255, 255], 120),
+      createTestFrame(100, 100, [255, 255, 0, 255], 130),
+      createTestFrame(100, 100, [255, 0, 255, 255], 140),
+    ]
 
-  // Test 1: Basic reverse
-  const frames = createTestFrames(5);
-  const reversed = reverseFrames(frames);
+    const pingPong = pingPongFrames(frames)
 
-  assertEqual(reversed.length, frames.length, 'Frame count should match');
-  assertEqual(reversed[0].delay, frames[4].delay, 'First frame should be last');
-  assertEqual(reversed[4].delay, frames[0].delay, 'Last frame should be first');
+    // Should be: [0, 1, 2, 3, 4, 3, 2, 1] (excludes first and last to avoid duplicates)
+    const expectedLength = frames.length + (frames.length - 2)
+    expect(pingPong.length).toBe(expectedLength)
 
-  console.log('✓ Basic reverse works correctly');
+    // Verify forward portion
+    expect(pingPong[0].delay).toBe(frames[0].delay)
+    expect(pingPong[4].delay).toBe(frames[4].delay)
 
-  // Test 2: Single frame
-  const singleFrame = createTestFrames(1);
-  const reversedSingle = reverseFrames(singleFrame);
+    // Verify backward portion (should be frames[3], frames[2], frames[1])
+    expect(pingPong[5].delay).toBe(frames[3].delay)
+    expect(pingPong[7].delay).toBe(frames[1].delay)
+  })
 
-  assertEqual(reversedSingle.length, 1, 'Single frame should remain single');
-  assertEqual(reversedSingle[0].delay, singleFrame[0].delay, 'Delay should be preserved');
+  it('should handle two frames', () => {
+    const twoFrames = [
+      createTestFrame(100, 100, [255, 0, 0, 255], 100),
+      createTestFrame(100, 100, [0, 255, 0, 255], 110),
+    ]
 
-  console.log('✓ Single frame reverse works correctly');
+    const pingPong = pingPongFrames(twoFrames)
 
-  // Test 3: Original should not be modified
-  const original = createTestFrames(3);
-  const originalFirstDelay = original[0].delay;
-  reverseFrames(original);
+    expect(pingPong.length).toBe(2)
+  })
 
-  assertEqual(original[0].delay, originalFirstDelay, 'Original array should not be modified');
+  it('should handle a single frame', () => {
+    const singleFrame = [createTestFrame(100, 100, [255, 0, 0, 255], 100)]
+    const pingPong = pingPongFrames(singleFrame)
 
-  console.log('✓ Original frames are not modified');
-}
+    expect(pingPong.length).toBe(1)
+  })
 
-function testPingPongFrames() {
-  console.log('\n=== Test: pingPongFrames ===');
+  it('should handle three frames correctly', () => {
+    const threeFrames = [
+      createTestFrame(100, 100, [255, 0, 0, 255], 100),
+      createTestFrame(100, 100, [0, 255, 0, 255], 110),
+      createTestFrame(100, 100, [0, 0, 255, 255], 120),
+    ]
 
-  // Test 1: Basic ping-pong
-  const frames = createTestFrames(5);
-  const pingPong = pingPongFrames(frames);
+    const pingPong = pingPongFrames(threeFrames)
 
-  // Should be: [0, 1, 2, 3, 4, 3, 2, 1] (excludes first and last to avoid duplicates)
-  const expectedLength = frames.length + (frames.length - 2);
-  assertEqual(pingPong.length, expectedLength, 'Ping-pong should have correct frame count');
+    // Should be: [0, 1, 2, 1] (middle frame only)
+    expect(pingPong.length).toBe(4)
+    expect(pingPong[0].delay).toBe(threeFrames[0].delay)
+    expect(pingPong[1].delay).toBe(threeFrames[1].delay)
+    expect(pingPong[2].delay).toBe(threeFrames[2].delay)
+    expect(pingPong[3].delay).toBe(threeFrames[1].delay)
+  })
+})
 
-  // Verify forward portion
-  assertEqual(pingPong[0].delay, frames[0].delay, 'First frame should match');
-  assertEqual(pingPong[4].delay, frames[4].delay, 'Last forward frame should match');
+describe('getTotalDuration', () => {
+  it('should calculate total duration correctly', () => {
+    const frames = [
+      createTestFrame(100, 100, [255, 0, 0, 255], 100),
+      createTestFrame(100, 100, [0, 255, 0, 255], 150),
+      createTestFrame(100, 100, [0, 0, 255, 255], 200),
+    ]
 
-  // Verify backward portion (should be frames[3], frames[2], frames[1])
-  assertEqual(pingPong[5].delay, frames[3].delay, 'First backward frame should be second-to-last');
-  assertEqual(pingPong[7].delay, frames[1].delay, 'Last backward frame should be second');
+    const duration = getTotalDuration(frames)
 
-  console.log('✓ Ping-pong creates correct sequence');
+    expect(duration).toBe(450)
+  })
 
-  // Test 2: Two frames
-  const twoFrames = createTestFrames(2);
-  const pingPongTwo = pingPongFrames(twoFrames);
+  it('should return zero for empty array', () => {
+    const emptyDuration = getTotalDuration([])
 
-  assertEqual(pingPongTwo.length, 2, 'Two frames should stay as two (no middle frames)');
+    expect(emptyDuration).toBe(0)
+  })
+})
 
-  console.log('✓ Two-frame ping-pong works correctly');
+describe('Frame count and duration changes', () => {
+  it('should maintain frame count when reversing', () => {
+    const frames = createMockFrames(10)
+    const reversed = reverseFrames(frames)
 
-  // Test 3: Single frame
-  const singleFrame = createTestFrames(1);
-  const pingPongSingle = pingPongFrames(singleFrame);
+    expect(reversed.length).toBe(frames.length)
+  })
 
-  assertEqual(pingPongSingle.length, 1, 'Single frame should remain single');
+  it('should increase frame count with ping-pong', () => {
+    const frames = createMockFrames(10)
+    const pingPong = pingPongFrames(frames)
+    const expectedPingPongCount = frames.length + (frames.length - 2)
 
-  console.log('✓ Single-frame ping-pong works correctly');
+    expect(pingPong.length).toBe(expectedPingPongCount)
+  })
 
-  // Test 4: Three frames
-  const threeFrames = createTestFrames(3);
-  const pingPongThree = pingPongFrames(threeFrames);
+  it('should increase duration with ping-pong', () => {
+    const frames = createMockFrames(10)
+    const pingPong = pingPongFrames(frames)
 
-  // Should be: [0, 1, 2, 1] (middle frame only)
-  assertEqual(pingPongThree.length, 4, 'Three frames should become four');
-  assertArrayEqual(
-    [pingPongThree[0].delay, pingPongThree[1].delay, pingPongThree[2].delay, pingPongThree[3].delay],
-    [threeFrames[0].delay, threeFrames[1].delay, threeFrames[2].delay, threeFrames[1].delay],
-    'Three-frame ping-pong sequence'
-  );
+    const originalDuration = getTotalDuration(frames)
+    const pingPongDuration = getTotalDuration(pingPong)
 
-  console.log('✓ Three-frame ping-pong works correctly');
-}
+    expect(pingPongDuration).toBeGreaterThan(originalDuration)
+  })
+})
 
-function testGetTotalDuration() {
-  console.log('\n=== Test: getTotalDuration ===');
+describe('Realistic frame counts', () => {
+  it('should handle 50 frames', () => {
+    const frames = Array.from({ length: 50 }, (_, i) =>
+      createTestFrame(800, 520, [255, 0, 0, 255], 100 + i * 10)
+    )
 
-  // Test 1: Basic duration
-  const frames = [
-    createTestFrame(100, 100, 100),
-    createTestFrame(100, 100, 150),
-    createTestFrame(100, 100, 200),
-  ];
+    const reversed = reverseFrames(frames)
+    expect(reversed.length).toBe(50)
 
-  const duration = getTotalDuration(frames);
-  assertEqual(duration, 450, 'Total duration should sum all delays');
+    const pingPong = pingPongFrames(frames)
+    expect(pingPong.length).toBe(98) // 50 + 48
 
-  console.log('✓ Duration calculation is correct');
+    const originalDuration = getTotalDuration(frames)
+    const pingPongDuration = getTotalDuration(pingPong)
 
-  // Test 2: Empty array
-  const emptyDuration = getTotalDuration([]);
-  assertEqual(emptyDuration, 0, 'Empty array should have zero duration');
-
-  console.log('✓ Empty array duration is zero');
-}
-
-function testFrameCountChanges() {
-  console.log('\n=== Test: Frame Count Changes ===');
-
-  const originalFrames = createTestFrames(10);
-
-  // Test reverse
-  const reversed = reverseFrames(originalFrames);
-  assertEqual(reversed.length, originalFrames.length, 'Reverse should not change frame count');
-
-  console.log('✓ Reverse maintains frame count');
-
-  // Test ping-pong
-  const pingPong = pingPongFrames(originalFrames);
-  const expectedPingPongCount = originalFrames.length + (originalFrames.length - 2);
-  assertEqual(pingPong.length, expectedPingPongCount, 'Ping-pong should double frames (minus 2)');
-
-  console.log('✓ Ping-pong correctly increases frame count');
-
-  // Test duration
-  const originalDuration = getTotalDuration(originalFrames);
-  const pingPongDuration = getTotalDuration(pingPong);
-
-  console.log(`  Original: ${originalFrames.length} frames, ${originalDuration}ms`);
-  console.log(`  Ping-pong: ${pingPong.length} frames, ${pingPongDuration}ms`);
-  console.log(`  Increase: +${pingPong.length - originalFrames.length} frames, +${pingPongDuration - originalDuration}ms`);
-
-  if (pingPongDuration <= originalDuration) {
-    throw new Error('Ping-pong duration should be longer than original');
-  }
-
-  console.log('✓ Ping-pong duration is longer than original');
-}
-
-// Real world test using the test image
-async function testWithRealImage() {
-  console.log('\n=== Test: Real Image Integration ===');
-  console.log('Note: This test requires browser environment with ImageDecoder API');
-  console.log('Skipping in Node.js environment...');
-
-  // In a browser environment, this would load and test with the actual WebP file
-  // For now, we validate that our utilities work with realistic frame counts
-
-  const realisticFrames = createTestFrames(50, 800, 520); // Similar to kamal-quake-demo.webp size
-
-  // Test reverse
-  const reversed = reverseFrames(realisticFrames);
-  assertEqual(reversed.length, 50, 'Should handle 50 frames');
-
-  // Test ping-pong
-  const pingPong = pingPongFrames(realisticFrames);
-  assertEqual(pingPong.length, 98, 'Should create 98 frames from 50 (50 + 48)');
-
-  // Test duration
-  const originalDuration = getTotalDuration(realisticFrames);
-  const pingPongDuration = getTotalDuration(pingPong);
-
-  console.log(`  Original: 50 frames, ${originalDuration}ms (${(originalDuration/1000).toFixed(2)}s)`);
-  console.log(`  Ping-pong: ${pingPong.length} frames, ${pingPongDuration}ms (${(pingPongDuration/1000).toFixed(2)}s)`);
-
-  console.log('✓ Handles realistic frame counts correctly');
-}
-
-// Run all tests
-async function runTests() {
-  console.log('=== ReverseTool Test Suite ===');
-  console.log('Testing frame utilities for the Reverse Tool component\n');
-
-  try {
-    testReverseFrames();
-    testPingPongFrames();
-    testGetTotalDuration();
-    testFrameCountChanges();
-    await testWithRealImage();
-
-    console.log('\n=== All Tests Passed ✓ ===\n');
-  } catch (error) {
-    console.error('\n❌ Test Failed:', error);
-    process.exit(1);
-  }
-}
-
-// Run tests
-runTests().catch(console.error);
+    expect(pingPongDuration).toBeGreaterThan(originalDuration)
+  })
+})

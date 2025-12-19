@@ -8,8 +8,10 @@
  * - Real end-to-end tests with actual image data
  */
 
+import { describe, it, expect } from 'vitest';
 import { resizeFrames, resizeImageData } from '../../lib/transforms';
 import type { Frame } from '../../types';
+import { createTestFrame, createMockFrames } from '../../test/testUtils';
 
 /**
  * Load an image from file path and convert to ImageData
@@ -43,279 +45,181 @@ async function loadImageAsImageData(imagePath: string): Promise<ImageData> {
 }
 
 /**
- * Create a test frame from ImageData
+ * Create proper ImageData with pixel data
  */
-function createFrame(imageData: ImageData, delay = 100): Frame {
-  return {
-    imageData,
-    delay,
-  };
+function createImageDataWithColor(
+  width: number,
+  height: number,
+  r: number,
+  g: number,
+  b: number
+): ImageData {
+  const data = new Uint8ClampedArray(width * height * 4);
+  for (let i = 0; i < data.length; i += 4) {
+    data[i] = r;
+    data[i + 1] = g;
+    data[i + 2] = b;
+    data[i + 3] = 255;
+  }
+  return new ImageData(data, width, height);
 }
 
-/**
- * Test: Resize with aspect ratio lock
- */
-async function testResizeWithAspectRatioLock() {
-  console.log('Test: Resize with aspect ratio lock');
+describe('ResizeTool', () => {
+  describe('resizeFrames', () => {
+    it('should resize with aspect ratio lock', async () => {
+      // Create a simple test image (400x200 - 2:1 aspect ratio)
+      const imageData = createImageDataWithColor(400, 200, 255, 0, 0);
+      const frame = createTestFrame(imageData);
 
-  // Create a simple test image
-  const canvas = document.createElement('canvas');
-  canvas.width = 400;
-  canvas.height = 200;
-  const ctx = canvas.getContext('2d')!;
+      // Test: Resize to 50% (should maintain 2:1 aspect ratio)
+      const targetWidth = 200;
+      const targetHeight = 100;
+      const resized = await resizeFrames([frame], targetWidth, targetHeight, 'medium');
 
-  // Draw a simple pattern
-  ctx.fillStyle = 'red';
-  ctx.fillRect(0, 0, 200, 200);
-  ctx.fillStyle = 'blue';
-  ctx.fillRect(200, 0, 200, 200);
+      expect(resized.length).toBe(1);
+      expect(resized[0].imageData.width).toBe(targetWidth);
+      expect(resized[0].imageData.height).toBe(targetHeight);
+      expect(resized[0].delay).toBe(frame.delay);
+    });
 
-  const imageData = ctx.getImageData(0, 0, 400, 200);
-  const frame = createFrame(imageData);
+    it('should resize by percentage', async () => {
+      const originalWidth = 300;
+      const originalHeight = 300;
 
-  // Test: Resize to 50% (should maintain 2:1 aspect ratio)
-  const targetWidth = 200;
-  const targetHeight = 100;
-  const resized = await resizeFrames([frame], targetWidth, targetHeight, 'medium');
+      const imageData = createImageDataWithColor(originalWidth, originalHeight, 128, 128, 128);
+      const frame = createTestFrame(imageData);
 
-  console.assert(resized.length === 1, 'Should have 1 frame');
-  console.assert(resized[0].imageData.width === targetWidth, `Width should be ${targetWidth}, got ${resized[0].imageData.width}`);
-  console.assert(resized[0].imageData.height === targetHeight, `Height should be ${targetHeight}, got ${resized[0].imageData.height}`);
-  console.assert(resized[0].delay === frame.delay, 'Delay should be preserved');
+      // Test different percentages
+      const testCases = [
+        { percent: 50, expectedWidth: 150, expectedHeight: 150 },
+        { percent: 150, expectedWidth: 450, expectedHeight: 450 },
+        { percent: 25, expectedWidth: 75, expectedHeight: 75 },
+      ];
 
-  console.log('✓ Aspect ratio lock test passed');
-}
+      for (const testCase of testCases) {
+        const targetWidth = Math.round((originalWidth * testCase.percent) / 100);
+        const targetHeight = Math.round((originalHeight * testCase.percent) / 100);
 
-/**
- * Test: Resize by percentage
- */
-async function testResizeByPercentage() {
-  console.log('Test: Resize by percentage');
+        const resized = await resizeFrames([frame], targetWidth, targetHeight, 'medium');
 
-  const originalWidth = 300;
-  const originalHeight = 300;
-
-  const canvas = document.createElement('canvas');
-  canvas.width = originalWidth;
-  canvas.height = originalHeight;
-  const ctx = canvas.getContext('2d')!;
-
-  // Draw a gradient
-  const gradient = ctx.createLinearGradient(0, 0, originalWidth, originalHeight);
-  gradient.addColorStop(0, 'red');
-  gradient.addColorStop(1, 'blue');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, originalWidth, originalHeight);
-
-  const imageData = ctx.getImageData(0, 0, originalWidth, originalHeight);
-  const frame = createFrame(imageData);
-
-  // Test different percentages
-  const testCases = [
-    { percent: 50, expectedWidth: 150, expectedHeight: 150 },
-    { percent: 150, expectedWidth: 450, expectedHeight: 450 },
-    { percent: 25, expectedWidth: 75, expectedHeight: 75 },
-  ];
-
-  for (const testCase of testCases) {
-    const targetWidth = Math.round((originalWidth * testCase.percent) / 100);
-    const targetHeight = Math.round((originalHeight * testCase.percent) / 100);
-
-    const resized = await resizeFrames([frame], targetWidth, targetHeight, 'medium');
-
-    console.assert(
-      resized[0].imageData.width === testCase.expectedWidth,
-      `${testCase.percent}% width should be ${testCase.expectedWidth}, got ${resized[0].imageData.width}`
-    );
-    console.assert(
-      resized[0].imageData.height === testCase.expectedHeight,
-      `${testCase.percent}% height should be ${testCase.expectedHeight}, got ${resized[0].imageData.height}`
-    );
-  }
-
-  console.log('✓ Resize by percentage test passed');
-}
-
-/**
- * Test: Different quality settings
- */
-async function testQualitySettings() {
-  console.log('Test: Different quality settings');
-
-  const canvas = document.createElement('canvas');
-  canvas.width = 400;
-  canvas.height = 400;
-  const ctx = canvas.getContext('2d')!;
-
-  // Draw a detailed pattern
-  for (let i = 0; i < 400; i += 10) {
-    ctx.strokeStyle = `hsl(${(i / 400) * 360}, 100%, 50%)`;
-    ctx.strokeRect(i, i, 400 - i * 2, 400 - i * 2);
-  }
-
-  const imageData = ctx.getImageData(0, 0, 400, 400);
-  const targetWidth = 200;
-  const targetHeight = 200;
-
-  // Test each quality setting
-  const qualities: Array<'low' | 'medium' | 'high'> = ['low', 'medium', 'high'];
-
-  for (const quality of qualities) {
-    const resized = await resizeImageData(imageData, targetWidth, targetHeight, quality);
-
-    console.assert(resized.width === targetWidth, `${quality} quality: width should be ${targetWidth}`);
-    console.assert(resized.height === targetHeight, `${quality} quality: height should be ${targetHeight}`);
-    console.assert(resized.data.length === targetWidth * targetHeight * 4, `${quality} quality: data length should match dimensions`);
-  }
-
-  console.log('✓ Quality settings test passed');
-}
-
-/**
- * Test: Multiple frames resize
- */
-async function testMultipleFrames() {
-  console.log('Test: Multiple frames resize');
-
-  const canvas = document.createElement('canvas');
-  canvas.width = 100;
-  canvas.height = 100;
-  const ctx = canvas.getContext('2d')!;
-
-  // Create 3 frames with different colors
-  const frames: Frame[] = [];
-  const colors = ['red', 'green', 'blue'];
-
-  for (let i = 0; i < 3; i++) {
-    ctx.fillStyle = colors[i];
-    ctx.fillRect(0, 0, 100, 100);
-    const imageData = ctx.getImageData(0, 0, 100, 100);
-    frames.push(createFrame(imageData, 100 + i * 50));
-  }
-
-  const resized = await resizeFrames(frames, 50, 50, 'medium');
-
-  console.assert(resized.length === 3, 'Should have 3 frames');
-
-  for (let i = 0; i < 3; i++) {
-    console.assert(resized[i].imageData.width === 50, `Frame ${i}: width should be 50`);
-    console.assert(resized[i].imageData.height === 50, `Frame ${i}: height should be 50`);
-    console.assert(resized[i].delay === frames[i].delay, `Frame ${i}: delay should be preserved`);
-  }
-
-  console.log('✓ Multiple frames test passed');
-}
-
-/**
- * Test: Real image from test assets (E2E test)
- */
-async function testRealImage() {
-  console.log('Test: Real image from test assets');
-
-  try {
-    const testImagePath = '/Users/jeremywatt/smartgif/test-assets/kamal-quake-demo.webp';
-    const imageData = await loadImageAsImageData(testImagePath);
-
-    console.log(`Loaded test image: ${imageData.width}×${imageData.height}`);
-
-    const frame = createFrame(imageData);
-
-    // Test resize to 50%
-    const targetWidth = Math.round(imageData.width * 0.5);
-    const targetHeight = Math.round(imageData.height * 0.5);
-
-    const resized = await resizeFrames([frame], targetWidth, targetHeight, 'high');
-
-    console.assert(resized.length === 1, 'Should have 1 frame');
-    console.assert(
-      Math.abs(resized[0].imageData.width - targetWidth) <= 1,
-      `Width should be approximately ${targetWidth}, got ${resized[0].imageData.width}`
-    );
-    console.assert(
-      Math.abs(resized[0].imageData.height - targetHeight) <= 1,
-      `Height should be approximately ${targetHeight}, got ${resized[0].imageData.height}`
-    );
-
-    // Verify the image data is valid
-    const data = resized[0].imageData.data;
-    console.assert(data.length === targetWidth * targetHeight * 4, 'ImageData buffer should have correct size');
-
-    // Check that we have some non-zero pixel data
-    let hasNonZeroPixels = false;
-    for (let i = 0; i < data.length; i += 4) {
-      if (data[i] !== 0 || data[i + 1] !== 0 || data[i + 2] !== 0) {
-        hasNonZeroPixels = true;
-        break;
+        expect(resized[0].imageData.width).toBe(testCase.expectedWidth);
+        expect(resized[0].imageData.height).toBe(testCase.expectedHeight);
       }
-    }
-    console.assert(hasNonZeroPixels, 'Resized image should have non-zero pixel data');
+    });
 
-    console.log('✓ Real image E2E test passed');
-  } catch (error) {
-    console.warn('⚠ Real image test skipped (image may not be accessible in test environment):', error);
-  }
-}
+    it('should handle multiple frames', async () => {
+      // Create 3 frames with different colors
+      const colors: Array<[number, number, number]> = [
+        [255, 0, 0],   // red
+        [0, 255, 0],   // green
+        [0, 0, 255],   // blue
+      ];
 
-/**
- * Test: Edge cases
- */
-async function testEdgeCases() {
-  console.log('Test: Edge cases');
+      const frames: Frame[] = colors.map((color, i) => {
+        const imageData = createImageDataWithColor(100, 100, color[0], color[1], color[2]);
+        return createTestFrame(imageData, 100 + i * 50);
+      });
 
-  const canvas = document.createElement('canvas');
-  canvas.width = 100;
-  canvas.height = 100;
-  const ctx = canvas.getContext('2d')!;
-  ctx.fillStyle = 'purple';
-  ctx.fillRect(0, 0, 100, 100);
+      const resized = await resizeFrames(frames, 50, 50, 'medium');
 
-  const imageData = ctx.getImageData(0, 0, 100, 100);
-  const frame = createFrame(imageData);
+      expect(resized.length).toBe(3);
 
-  // Test: Very small resize
-  const small = await resizeFrames([frame], 10, 10, 'low');
-  console.assert(small[0].imageData.width === 10, 'Small resize: width should be 10');
-  console.assert(small[0].imageData.height === 10, 'Small resize: height should be 10');
+      for (let i = 0; i < 3; i++) {
+        expect(resized[i].imageData.width).toBe(50);
+        expect(resized[i].imageData.height).toBe(50);
+        expect(resized[i].delay).toBe(frames[i].delay);
+      }
+    });
 
-  // Test: Very large resize
-  const large = await resizeFrames([frame], 500, 500, 'low');
-  console.assert(large[0].imageData.width === 500, 'Large resize: width should be 500');
-  console.assert(large[0].imageData.height === 500, 'Large resize: height should be 500');
+    it('should handle edge cases', async () => {
+      const imageData = createImageDataWithColor(100, 100, 128, 0, 128);
+      const frame = createTestFrame(imageData);
 
-  // Test: Non-square aspect ratio
-  const nonsquare = await resizeFrames([frame], 150, 50, 'medium');
-  console.assert(nonsquare[0].imageData.width === 150, 'Non-square: width should be 150');
-  console.assert(nonsquare[0].imageData.height === 50, 'Non-square: height should be 50');
+      // Test: Very small resize
+      const small = await resizeFrames([frame], 10, 10, 'low');
+      expect(small[0].imageData.width).toBe(10);
+      expect(small[0].imageData.height).toBe(10);
 
-  console.log('✓ Edge cases test passed');
-}
+      // Test: Very large resize
+      const large = await resizeFrames([frame], 500, 500, 'low');
+      expect(large[0].imageData.width).toBe(500);
+      expect(large[0].imageData.height).toBe(500);
 
-/**
- * Run all tests
- */
-export async function runAllTests() {
-  console.log('=== ResizeTool Tests ===\n');
+      // Test: Non-square aspect ratio
+      const nonsquare = await resizeFrames([frame], 150, 50, 'medium');
+      expect(nonsquare[0].imageData.width).toBe(150);
+      expect(nonsquare[0].imageData.height).toBe(50);
+    });
 
-  try {
-    await testResizeWithAspectRatioLock();
-    await testResizeByPercentage();
-    await testQualitySettings();
-    await testMultipleFrames();
-    await testEdgeCases();
-    await testRealImage();
+    // Skip E2E tests - they require real file system access which isn't available in jsdom
+    it.skip('should handle real image from test assets', async () => {
+      try {
+        const testImagePath = '/Users/jeremywatt/smartgif/test-assets/kamal-quake-demo.webp';
+        const imageData = await loadImageAsImageData(testImagePath);
 
-    console.log('\n=== All tests passed! ===');
-    return true;
-  } catch (error) {
-    console.error('\n=== Test failed! ===');
-    console.error(error);
-    return false;
-  }
-}
+        const frame = createTestFrame(imageData);
 
-// Run tests if this file is executed directly
-if (typeof window !== 'undefined') {
-  // Browser environment - expose to window for manual testing
-  (window as any).runResizeToolTests = runAllTests;
-  console.log('ResizeTool tests loaded. Run window.runResizeToolTests() to execute.');
-}
+        // Test resize to 50%
+        const targetWidth = Math.round(imageData.width * 0.5);
+        const targetHeight = Math.round(imageData.height * 0.5);
+
+        const resized = await resizeFrames([frame], targetWidth, targetHeight, 'high');
+
+        expect(resized.length).toBe(1);
+        expect(Math.abs(resized[0].imageData.width - targetWidth)).toBeLessThanOrEqual(1);
+        expect(Math.abs(resized[0].imageData.height - targetHeight)).toBeLessThanOrEqual(1);
+
+        // Verify the image data is valid
+        const data = resized[0].imageData.data;
+        expect(data.length).toBe(targetWidth * targetHeight * 4);
+
+        // Check that we have some non-zero pixel data
+        let hasNonZeroPixels = false;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i] !== 0 || data[i + 1] !== 0 || data[i + 2] !== 0) {
+            hasNonZeroPixels = true;
+            break;
+          }
+        }
+        expect(hasNonZeroPixels).toBe(true);
+      } catch (error) {
+        // Skip test if image is not accessible
+        console.warn('Real image test skipped (image may not be accessible in test environment):', error);
+      }
+    });
+  });
+
+  describe('resizeImageData', () => {
+    it('should handle different quality settings', async () => {
+      // Create a gradient pattern ImageData
+      const width = 400;
+      const height = 400;
+      const data = new Uint8ClampedArray(width * height * 4);
+
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const i = (y * width + x) * 4;
+          data[i] = Math.floor((x / width) * 255);     // R
+          data[i + 1] = Math.floor((y / height) * 255); // G
+          data[i + 2] = 128;                            // B
+          data[i + 3] = 255;                            // A
+        }
+      }
+
+      const imageData = new ImageData(data, width, height);
+      const targetWidth = 200;
+      const targetHeight = 200;
+
+      // Test each quality setting
+      const qualities: Array<'low' | 'medium' | 'high'> = ['low', 'medium', 'high'];
+
+      for (const quality of qualities) {
+        const resized = await resizeImageData(imageData, targetWidth, targetHeight, quality);
+
+        expect(resized.width).toBe(targetWidth);
+        expect(resized.height).toBe(targetHeight);
+        expect(resized.data.length).toBe(targetWidth * targetHeight * 4);
+      }
+    });
+  });
+});
