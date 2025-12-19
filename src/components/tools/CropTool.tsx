@@ -243,7 +243,7 @@ export function CropTool({ frames, onFramesChange }: CropToolProps) {
   };
 
   const getHoveredHandle = (x: number, y: number): HandleType => {
-    const handles: HandleType[] = ['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'];
+    const handles = ['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'] as const;
     for (const handle of handles) {
       if (isPointInHandle(x, y, handle)) {
         return handle;
