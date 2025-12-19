@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { Frame } from '../../types';
 import { resizeFrames } from '../../lib/transforms';
+import { PresetSelector } from '../PresetSelector';
+import type { Preset } from '../../lib/presets';
 
 interface ResizeToolProps {
   frames: Frame[];
@@ -26,6 +28,7 @@ export function ResizeTool({
   const [quality, setQuality] = useState<QualitySetting>('medium');
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewFrames, setPreviewFrames] = useState<Frame[] | null>(null);
+  const [selectedPresetId, setSelectedPresetId] = useState<string | undefined>();
 
   const aspectRatio = originalWidth / originalHeight;
 
@@ -88,6 +91,7 @@ export function ResizeTool({
   const handleWidthChange = (newWidth: number) => {
     const clampedWidth = Math.max(10, Math.min(newWidth, originalWidth * 4));
     setWidth(clampedWidth);
+    setSelectedPresetId(undefined); // Clear preset when manually changing
 
     if (lockAspectRatio) {
       const newHeight = Math.round(clampedWidth / aspectRatio);
@@ -102,6 +106,7 @@ export function ResizeTool({
   const handleHeightChange = (newHeight: number) => {
     const clampedHeight = Math.max(10, Math.min(newHeight, originalHeight * 4));
     setHeight(clampedHeight);
+    setSelectedPresetId(undefined); // Clear preset when manually changing
 
     if (lockAspectRatio) {
       const newWidth = Math.round(clampedHeight * aspectRatio);
@@ -115,10 +120,22 @@ export function ResizeTool({
 
   const handleScaleChange = (newScale: number) => {
     setScalePercent(newScale);
+    setSelectedPresetId(undefined); // Clear preset when using slider
   };
 
   const handlePresetClick = (preset: number) => {
     setScalePercent(preset);
+    setSelectedPresetId(undefined); // Clear platform preset when using scale preset
+  };
+
+  const handlePlatformPresetSelect = (preset: Preset) => {
+    setSelectedPresetId(preset.id);
+    setWidth(preset.width);
+    setHeight(preset.height);
+    setLockAspectRatio(false); // Unlock to allow preset dimensions
+    // Update scale percent based on width
+    const newScale = Math.round((preset.width / originalWidth) * 100);
+    setScalePercent(newScale);
   };
 
   const handleApply = async () => {
@@ -168,6 +185,16 @@ export function ResizeTool({
     <div className="space-y-4">
       {/* Controls Row */}
       <div className="bg-gray-800 rounded-lg p-4 space-y-4">
+        {/* Platform Presets */}
+        <PresetSelector
+          onSelect={handlePlatformPresetSelect}
+          selectedPresetId={selectedPresetId}
+          disabled={isProcessing}
+        />
+
+        {/* Divider */}
+        <div className="border-t border-gray-700" />
+
         {/* Scale Presets */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-gray-400">Scale:</span>
