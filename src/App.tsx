@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
+import { LandingPage } from './pages/LandingPage';
 import { ConvertPage } from './pages/ConvertPage';
 import { CropPage } from './pages/CropPage';
 import { ResizePage } from './pages/ResizePage';
@@ -13,7 +14,8 @@ function App() {
     <BrowserRouter basename="/smartgif">
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<ConvertPage />} />
+          <Route index element={<LandingPage />} />
+          <Route path="convert" element={<ConvertPage />} />
           <Route path="crop-gif" element={<CropPage />} />
           <Route path="resize-gif" element={<ResizePage />} />
           <Route path="change-gif-speed" element={<SpeedPage />} />

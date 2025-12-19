@@ -13,23 +13,57 @@ async function uploadAndWaitForLoad(page: Page, filePath: string) {
 }
 
 test.describe('GIF Workflow E2E Tests', () => {
+  test.describe('Landing Page', () => {
+    test('should display landing page with hero and tools', async ({ page }) => {
+      await page.goto('./')
+
+      // Check hero section
+      await expect(page.getByText('Smart GIF Tools')).toBeVisible()
+      await expect(page.getByText('That Run in Your Browser')).toBeVisible()
+
+      // Check privacy banner
+      await expect(page.getByText('Your Privacy, Guaranteed')).toBeVisible()
+
+      // Check tool cards are visible
+      await expect(page.getByText('Convert to GIF')).toBeVisible()
+      await expect(page.getByText('Crop GIF')).toBeVisible()
+      await expect(page.getByText('Resize GIF')).toBeVisible()
+
+      // Check CTA buttons
+      await expect(page.getByRole('link', { name: 'Start Converting' })).toBeVisible()
+    })
+
+    test('should navigate to tools from landing page', async ({ page }) => {
+      await page.goto('./')
+
+      // Click on Convert tool card
+      await page.click('text=Convert to GIF')
+      await expect(page).toHaveURL(/\/convert/)
+
+      // Go back and try another tool
+      await page.goto('./')
+      await page.click('text=Crop GIF')
+      await expect(page).toHaveURL(/\/crop-gif/)
+    })
+  })
+
   test.describe('Convert Page', () => {
     test('should load and display the convert page', async ({ page }) => {
-      await page.goto('./')
+      await page.goto('./convert')
 
       await expect(page.getByText('SmartGIF')).toBeVisible()
       await expect(page.locator('h1')).toContainText('Convert')
     })
 
     test('should show upload zone with correct file types', async ({ page }) => {
-      await page.goto('./')
+      await page.goto('./convert')
 
       await expect(page.getByText('Drag & drop or click to upload')).toBeVisible()
       await expect(page.getByText(/Supports.*PNG.*JPEG.*WebP.*GIF.*MP4.*WebM/i)).toBeVisible()
     })
 
     test('should upload and decode a GIF file', async ({ page }) => {
-      await page.goto('./')
+      await page.goto('./convert')
 
       await uploadAndWaitForLoad(page, path.join(TEST_ASSETS, 'sample-animation.gif'))
 
@@ -39,7 +73,7 @@ test.describe('GIF Workflow E2E Tests', () => {
     })
 
     test('should upload a PNG image', async ({ page }) => {
-      await page.goto('./')
+      await page.goto('./convert')
 
       const fileInput = page.locator('input[type="file"]')
       await fileInput.setInputFiles(path.join(TEST_ASSETS, 'sample-image.png'))
@@ -48,7 +82,7 @@ test.describe('GIF Workflow E2E Tests', () => {
     })
 
     test('should upload a JPG image', async ({ page }) => {
-      await page.goto('./')
+      await page.goto('./convert')
 
       const fileInput = page.locator('input[type="file"]')
       await fileInput.setInputFiles(path.join(TEST_ASSETS, 'sample-photo.jpg'))
@@ -632,7 +666,7 @@ test.describe('GIF Workflow E2E Tests', () => {
 
   test.describe('Navigation', () => {
     test('should navigate between all tools', async ({ page }) => {
-      await page.goto('./')
+      await page.goto('./convert')
 
       // Navigate through all tools
       await page.click('text=Crop')
@@ -660,7 +694,7 @@ test.describe('GIF Workflow E2E Tests', () => {
       await expect(page.locator('h1')).toContainText('Frames')
 
       await page.click('text=Convert')
-      await expect(page).toHaveURL(/smartgif\/?$/)
+      await expect(page).toHaveURL(/\/convert/)
       await expect(page.locator('h1')).toContainText('Convert')
     })
   })

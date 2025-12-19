@@ -7,7 +7,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { path: '/', label: 'Convert', icon: '🔄' },
+  { path: '/convert', label: 'Convert', icon: '🔄' },
   { path: '/crop-gif', label: 'Crop', icon: '✂️' },
   { path: '/resize-gif', label: 'Resize', icon: '📐' },
   { path: '/change-gif-speed', label: 'Speed', icon: '⏱️' },
