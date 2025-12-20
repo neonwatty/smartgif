@@ -13,6 +13,7 @@ const navItems: NavItem[] = [
   { path: '/change-gif-speed', label: 'Speed', icon: '⏱️' },
   { path: '/reverse-gif', label: 'Reverse', icon: '↩️' },
   { path: '/rotate-flip-gif', label: 'Rotate', icon: '🔃' },
+  { path: '/effects', label: 'Effects', icon: '✨' },
   { path: '/gif-to-frames', label: 'Split', icon: '📑' },
 ];
 

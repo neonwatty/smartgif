@@ -82,6 +82,13 @@ const TOOLS = [
     features: ['All image formats', 'Flip H/V', 'Arbitrary angle'],
   },
   {
+    icon: '✨',
+    name: 'Effects & Filters',
+    description: 'Apply effects like grayscale, sepia, blur, and adjust brightness, contrast, and saturation.',
+    link: '/effects',
+    features: ['9 effects', 'Quick presets', 'Live preview'],
+  },
+  {
     icon: '📑',
     name: 'Split to Frames',
     description: 'Extract all frames from a GIF as individual PNG images.',

@@ -8,6 +8,7 @@ import { SpeedPage } from './pages/SpeedPage';
 import { ReversePage } from './pages/ReversePage';
 import { RotatePage } from './pages/RotatePage';
 import { SplitPage } from './pages/SplitPage';
+import { EffectsPage } from './pages/EffectsPage';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
           <Route path="reverse-gif" element={<ReversePage />} />
           <Route path="rotate-flip-gif" element={<RotatePage />} />
           <Route path="gif-to-frames" element={<SplitPage />} />
+          <Route path="effects" element={<EffectsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
