@@ -5,6 +5,10 @@ import { Preview } from '../components/Preview';
 import { ProgressBar } from '../components/ProgressBar';
 import { decodeFile } from '../lib/decoder';
 import { optimizeForTargetSize, encodeWithSettings } from '../lib/optimizer';
+import { useSEO } from '../hooks/useSEO';
+import { useFAQSchema } from '../hooks/useFAQSchema';
+import { SEO_CONFIG } from '../config/seoConfig';
+import { FAQ_DATA } from '../lib/faqData';
 import type { Frame, ConversionSettings, ConversionProgress } from '../types';
 
 const defaultSettings: ConversionSettings = {
@@ -19,6 +23,11 @@ const defaultSettings: ConversionSettings = {
 };
 
 export function ConvertPage() {
+  const seo = SEO_CONFIG.convert;
+  const faqData = FAQ_DATA.convert;
+  useSEO({ title: seo.title, description: seo.description, canonicalPath: seo.canonicalPath });
+  useFAQSchema(faqData.pageId, faqData.faqs);
+
   const [file, setFile] = useState<File | null>(null);
   const [originalUrl, setOriginalUrl] = useState<string | null>(null);
   const [frames, setFrames] = useState<Frame[]>([]);

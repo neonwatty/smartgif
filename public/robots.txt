@@ -5,5 +5,8 @@
 User-agent: *
 Allow: /
 
+# LLM-friendly content
+LLMs-Txt: https://neonwatty.github.io/smartgif/llms.txt
+
 # Sitemap location
 Sitemap: https://neonwatty.github.io/smartgif/sitemap.xml

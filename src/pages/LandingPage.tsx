@@ -1,4 +1,8 @@
 import { Link } from 'react-router-dom';
+import { useSEO } from '../hooks/useSEO';
+import { useFAQSchema } from '../hooks/useFAQSchema';
+import { SEO_CONFIG } from '../config/seoConfig';
+import { FAQ_DATA } from '../lib/faqData';
 
 interface ToolCardProps {
   icon: string;
@@ -98,6 +102,11 @@ const TOOLS = [
 ];
 
 export function LandingPage() {
+  const seo = SEO_CONFIG.landing;
+  const faqData = FAQ_DATA.landing;
+  useSEO({ title: seo.title, description: seo.description, canonicalPath: seo.canonicalPath });
+  useFAQSchema(faqData.pageId, faqData.faqs);
+
   return (
     <div className="animated-gradient grid-pattern min-h-screen">
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-16">

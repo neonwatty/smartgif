@@ -9,6 +9,7 @@ import { ReversePage } from './pages/ReversePage';
 import { RotatePage } from './pages/RotatePage';
 import { SplitPage } from './pages/SplitPage';
 import { EffectsPage } from './pages/EffectsPage';
+import { DiscordPage } from './pages/DiscordPage';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
           <Route path="rotate-flip-gif" element={<RotatePage />} />
           <Route path="gif-to-frames" element={<SplitPage />} />
           <Route path="effects" element={<EffectsPage />} />
+          <Route path="discord" element={<DiscordPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

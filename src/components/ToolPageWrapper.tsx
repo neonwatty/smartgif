@@ -1,11 +1,19 @@
 import { useCallback, useState, type ReactNode } from 'react';
 import { DropZone } from './DropZone';
 import { useToolFrames } from '../hooks/useToolFrames';
+import { useSEO } from '../hooks/useSEO';
+import { useFAQSchema } from '../hooks/useFAQSchema';
 import type { Frame } from '../types';
+import type { FAQItem } from '../lib/faqData';
 
 interface ToolPageWrapperProps {
   title: string;
   description: string;
+  seoTitle: string;
+  seoDescription: string;
+  canonicalPath: string;
+  pageId: string;
+  faqs: FAQItem[];
   children: (props: {
     frames: Frame[];
     onFramesChange: (frames: Frame[], width?: number, height?: number) => void;
@@ -15,7 +23,18 @@ interface ToolPageWrapperProps {
   }) => ReactNode;
 }
 
-export function ToolPageWrapper({ title, description, children }: ToolPageWrapperProps) {
+export function ToolPageWrapper({
+  title,
+  description,
+  seoTitle,
+  seoDescription,
+  canonicalPath,
+  pageId,
+  faqs,
+  children,
+}: ToolPageWrapperProps) {
+  useSEO({ title: seoTitle, description: seoDescription, canonicalPath });
+  useFAQSchema(pageId, faqs);
   const {
     file,
     frames,

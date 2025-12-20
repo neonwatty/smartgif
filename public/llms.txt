@@ -1,0 +1,126 @@
+# SmartGIF
+
+> SmartGIF is a free, privacy-focused, client-side GIF tool that converts images and videos to GIFs, and provides powerful editing capabilities including crop, resize, speed control, reverse, rotate, effects, and frame extraction. All processing happens locally in the browser with no server uploads, no watermarks, and no signup required.
+
+## About
+
+SmartGIF is a web-based GIF creation and editing suite available at https://neonwatty.github.io/smartgif/. It is completely free to use with no limitations. The key differentiator is **100% client-side processing** - your files never leave your device, ensuring complete privacy. The app works offline after the initial page load.
+
+## Supported Input Formats
+
+- **Images**: PNG, JPG/JPEG, WebP, GIF
+- **Videos**: MP4, WebM
+
+All outputs are in GIF format (or PNG for frame extraction).
+
+## Tools
+
+### Convert to GIF
+- **URL**: https://neonwatty.github.io/smartgif/convert
+- **Description**: Convert images (PNG, JPG, WebP) and videos (MP4, WebM) to optimized GIFs
+- **Features**:
+  - Target file size optimization (auto-adjusts quality to hit exact KB target)
+  - Manual control over dimensions, colors (2-256), FPS, and dithering
+  - Floyd-Steinberg dithering for high-quality color reduction
+  - Loop control (infinite or specific count)
+
+### Crop GIF
+- **URL**: https://neonwatty.github.io/smartgif/crop-gif
+- **Description**: Precisely crop images and GIFs with visual selection
+- **Features**:
+  - Freeform cropping with drag-and-drop selection
+  - Aspect ratio lock options
+  - Auto-crop border detection
+  - Works on PNG, JPG, and animated GIFs
+
+### Resize GIF
+- **URL**: https://neonwatty.github.io/smartgif/resize-gif
+- **Description**: Scale images and GIFs with platform-specific presets
+- **Features**:
+  - Platform presets for Discord (emoji 128x128, sticker 320x320, server icon 512x512)
+  - Twitter/X presets (GIF post 1280x720, profile 400x400)
+  - Instagram presets (square 1080x1080, story 1080x1920, landscape 1080x566)
+  - Slack emoji presets (128x128, 256x256)
+  - WhatsApp sticker (512x512, max 100KB)
+  - Telegram sticker (512x512)
+  - Favicon sizes (16x16, 32x32, 48x48, 180x180)
+  - Custom dimensions with aspect ratio lock
+  - Quality control
+
+### Change GIF Speed
+- **URL**: https://neonwatty.github.io/smartgif/change-gif-speed
+- **Description**: Speed up or slow down GIF animations
+- **Features**:
+  - Speed multiplier control
+  - Frame delay editor
+  - Maintains smooth playback
+
+### Reverse GIF
+- **URL**: https://neonwatty.github.io/smartgif/reverse-gif
+- **Description**: Reverse GIF playback direction
+- **Features**:
+  - Full reverse playback
+  - Boomerang mode (forward then backward)
+  - Ping-pong loop creation
+
+### Rotate & Flip GIF
+- **URL**: https://neonwatty.github.io/smartgif/rotate-flip-gif
+- **Description**: Rotate and flip images and GIFs
+- **Features**:
+  - Rotate 90, 180, or 270 degrees
+  - Arbitrary angle rotation
+  - Horizontal flip
+  - Vertical flip
+  - Works on all supported formats
+
+### Effects & Filters
+- **URL**: https://neonwatty.github.io/smartgif/effects
+- **Description**: Apply visual effects and filters to GIFs
+- **Features**:
+  - 9 built-in effects (grayscale, sepia, blur, invert, etc.)
+  - Brightness adjustment
+  - Contrast control
+  - Saturation control
+  - Quick presets
+  - Live preview
+
+### Split to Frames (GIF to Frames)
+- **URL**: https://neonwatty.github.io/smartgif/gif-to-frames
+- **Description**: Extract individual frames from animated GIFs
+- **Features**:
+  - Export all frames as PNG images
+  - ZIP download for batch frames
+  - Individual frame selection
+  - Frame-by-frame preview
+
+## Key Benefits
+
+1. **100% Private**: All processing happens locally in your browser. No files are uploaded to any server.
+2. **Completely Free**: No pricing tiers, no feature limits, no watermarks.
+3. **No Signup Required**: Use immediately without creating an account.
+4. **Works Offline**: After initial load, functions without internet connection.
+5. **No Watermarks**: Downloaded GIFs are clean with no branding.
+6. **Platform Presets**: One-click sizing for Discord, Slack, Twitter, Instagram, WhatsApp, Telegram.
+
+## Use Cases
+
+- Creating Discord animated emojis and stickers with correct size limits
+- Making Slack custom emojis from videos or images
+- Converting video clips to GIFs for social media
+- Optimizing GIFs to meet platform file size requirements
+- Creating boomerang-style looping GIFs
+- Extracting frames from GIFs for editing
+- Resizing GIFs for different platforms while maintaining quality
+- Adding effects to existing GIFs
+- Creating favicons from images
+
+## Technical Details
+
+- **Framework**: React with TypeScript
+- **Hosting**: GitHub Pages (static site)
+- **Processing**: Client-side JavaScript using Canvas API and custom GIF encoder
+- **No dependencies on**: Server uploads, cloud processing, external APIs
+
+## Optional
+
+- [Sitemap](https://neonwatty.github.io/smartgif/sitemap.xml): XML sitemap of all tool pages
