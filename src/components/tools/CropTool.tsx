@@ -64,6 +64,7 @@ export function CropTool({ frames, onFramesChange }: CropToolProps) {
 
   const [scale, setScale] = useState(1);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const previewUrlRef = useRef<string | null>(null);
   const [hoveredHandle, setHoveredHandle] = useState<HandleType>(null);
   const [isOverCropArea, setIsOverCropArea] = useState(false);
 
@@ -156,15 +157,21 @@ export function CropTool({ frames, onFramesChange }: CropToolProps) {
     canvas.toBlob((blob) => {
       if (blob) {
         const url = URL.createObjectURL(blob);
-        setPreviewUrl((prev) => {
-          if (prev) URL.revokeObjectURL(prev);
-          return url;
-        });
+        // Revoke previous URL and update ref
+        if (previewUrlRef.current) {
+          URL.revokeObjectURL(previewUrlRef.current);
+        }
+        previewUrlRef.current = url;
+        setPreviewUrl(url);
       }
     });
 
     return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      // Use ref for cleanup to get the current value
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+        previewUrlRef.current = null;
+      }
     };
   }, [cropRect, frames]);
 

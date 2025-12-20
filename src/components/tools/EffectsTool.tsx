@@ -69,20 +69,27 @@ export function EffectsTool({ frames, onFramesChange }: EffectsToolProps) {
   const originalCanvasRef = useRef<HTMLCanvasElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Track previous frame dimensions to detect new file loads
+  const prevFrameDimsRef = useRef<string | null>(null);
+
   // Update original frames only when a new file is loaded (dimensions change)
   useEffect(() => {
-    if (frames.length > 0 && originalFrames.length > 0) {
-      const newDims = `${frames[0].imageData.width}x${frames[0].imageData.height}`;
-      const oldDims = `${originalFrames[0].imageData.width}x${originalFrames[0].imageData.height}`;
-      if (newDims !== oldDims || frames.length !== originalFrames.length) {
+    if (frames.length === 0) return;
+
+    const currentDims = `${frames[0].imageData.width}x${frames[0].imageData.height}x${frames.length}`;
+
+    // Only update if dimensions changed (new file loaded)
+    if (prevFrameDimsRef.current !== currentDims) {
+      prevFrameDimsRef.current = currentDims;
+      // Use timeout to avoid synchronous setState in effect
+      const timeoutId = setTimeout(() => {
         setOriginalFrames(deepCopyFrames(frames));
         setOriginalFrameIndex(0);
         setPreviewFrameIndex(0);
-      }
-    } else if (frames.length > 0 && originalFrames.length === 0) {
-      setOriginalFrames(deepCopyFrames(frames));
+      }, 0);
+      return () => clearTimeout(timeoutId);
     }
-  }, [frames, originalFrames]);
+  }, [frames]);
 
   // Check if any effects are applied
   const hasChanges = EFFECTS.some(effect => {
@@ -119,14 +126,21 @@ export function EffectsTool({ frames, onFramesChange }: EffectsToolProps) {
   useEffect(() => {
     if (originalFrames.length === 0) return;
 
-    setIsProcessing(true);
+    // Use timeout to avoid synchronous setState in effect
+    const processingTimeoutId = setTimeout(() => {
+      setIsProcessing(true);
+    }, 0);
+
     const timeoutId = setTimeout(() => {
       const processed = applyAllEffects(originalFrames);
       setPreviewFrames(processed);
       setIsProcessing(false);
     }, 50);
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(processingTimeoutId);
+      clearTimeout(timeoutId);
+    };
   }, [effectValues, originalFrames, applyAllEffects]);
 
   // Animate original frames

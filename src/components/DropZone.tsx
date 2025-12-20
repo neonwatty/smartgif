@@ -58,7 +58,7 @@ export function DropZone({
 
     document.addEventListener('paste', handlePaste);
     return () => document.removeEventListener('paste', handlePaste);
-  }, [disabled, onFileSelect]);
+  }, [disabled, onFileSelect, loadFromUrl]);
 
   const isLikelyImageUrl = (text: string): boolean => {
     try {
@@ -72,7 +72,7 @@ export function DropZone({
     }
   };
 
-  const loadFromUrl = async (url: string) => {
+  const loadFromUrl = useCallback(async (url: string) => {
     if (!url.trim()) {
       setUrlError('Please enter a URL');
       return;
@@ -96,7 +96,7 @@ export function DropZone({
     } finally {
       setIsLoadingUrl(false);
     }
-  };
+  }, [onFileSelect]);
 
   const handleUrlSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,7 +145,7 @@ export function DropZone({
         await loadFromUrl(url);
       }
     },
-    [onFileSelect, disabled]
+    [onFileSelect, disabled, loadFromUrl]
   );
 
   const handleFileInput = useCallback(
