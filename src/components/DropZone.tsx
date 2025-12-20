@@ -25,41 +25,6 @@ export function DropZone({
   const [urlError, setUrlError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Handle clipboard paste
-  useEffect(() => {
-    const handlePaste = async (e: ClipboardEvent) => {
-      if (disabled) return;
-
-      const items = e.clipboardData?.items;
-      if (!items) return;
-
-      // Check for image in clipboard
-      for (const item of items) {
-        if (item.type.startsWith('image/')) {
-          e.preventDefault();
-          const blob = item.getAsFile();
-          if (blob) {
-            onFileSelect(blob);
-            return;
-          }
-        }
-      }
-
-      // Check for URL in clipboard
-      const text = e.clipboardData?.getData('text');
-      if (text && isLikelyImageUrl(text)) {
-        e.preventDefault();
-        setActiveTab('url');
-        setUrlInput(text);
-        // Auto-load if it looks like an image URL
-        await loadFromUrl(text);
-      }
-    };
-
-    document.addEventListener('paste', handlePaste);
-    return () => document.removeEventListener('paste', handlePaste);
-  }, [disabled, onFileSelect, loadFromUrl]);
-
   const isLikelyImageUrl = (text: string): boolean => {
     try {
       const url = new URL(text.trim().startsWith('http') ? text : `https://${text}`);
@@ -97,6 +62,41 @@ export function DropZone({
       setIsLoadingUrl(false);
     }
   }, [onFileSelect]);
+
+  // Handle clipboard paste
+  useEffect(() => {
+    const handlePaste = async (e: ClipboardEvent) => {
+      if (disabled) return;
+
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      // Check for image in clipboard
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const blob = item.getAsFile();
+          if (blob) {
+            onFileSelect(blob);
+            return;
+          }
+        }
+      }
+
+      // Check for URL in clipboard
+      const text = e.clipboardData?.getData('text');
+      if (text && isLikelyImageUrl(text)) {
+        e.preventDefault();
+        setActiveTab('url');
+        setUrlInput(text);
+        // Auto-load if it looks like an image URL
+        await loadFromUrl(text);
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [disabled, onFileSelect, loadFromUrl]);
 
   const handleUrlSubmit = (e: React.FormEvent) => {
     e.preventDefault();
