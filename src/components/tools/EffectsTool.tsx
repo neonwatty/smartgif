@@ -44,8 +44,21 @@ const getDefaultValues = (): EffectValues => {
   return values as EffectValues;
 };
 
+// Deep copy frames to preserve original state
+const deepCopyFrames = (frames: Frame[]): Frame[] => {
+  return frames.map(frame => ({
+    ...frame,
+    imageData: new ImageData(
+      new Uint8ClampedArray(frame.imageData.data),
+      frame.imageData.width,
+      frame.imageData.height
+    ),
+  }));
+};
+
 export function EffectsTool({ frames, onFramesChange }: EffectsToolProps) {
   const [effectValues, setEffectValues] = useState<EffectValues>(getDefaultValues);
+  const [originalFrames, setOriginalFrames] = useState<Frame[]>(() => deepCopyFrames(frames));
   const [previewFrames, setPreviewFrames] = useState<Frame[]>(frames);
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeEffect, setActiveEffect] = useState<EffectName | null>(null);
@@ -55,6 +68,21 @@ export function EffectsTool({ frames, onFramesChange }: EffectsToolProps) {
   const [previewFrameIndex, setPreviewFrameIndex] = useState(0);
   const originalCanvasRef = useRef<HTMLCanvasElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Update original frames only when a new file is loaded (dimensions change)
+  useEffect(() => {
+    if (frames.length > 0 && originalFrames.length > 0) {
+      const newDims = `${frames[0].imageData.width}x${frames[0].imageData.height}`;
+      const oldDims = `${originalFrames[0].imageData.width}x${originalFrames[0].imageData.height}`;
+      if (newDims !== oldDims || frames.length !== originalFrames.length) {
+        setOriginalFrames(deepCopyFrames(frames));
+        setOriginalFrameIndex(0);
+        setPreviewFrameIndex(0);
+      }
+    } else if (frames.length > 0 && originalFrames.length === 0) {
+      setOriginalFrames(deepCopyFrames(frames));
+    }
+  }, [frames, originalFrames]);
 
   // Check if any effects are applied
   const hasChanges = EFFECTS.some(effect => {
@@ -89,27 +117,27 @@ export function EffectsTool({ frames, onFramesChange }: EffectsToolProps) {
 
   // Update preview when effect values change
   useEffect(() => {
-    if (frames.length === 0) return;
+    if (originalFrames.length === 0) return;
 
     setIsProcessing(true);
     const timeoutId = setTimeout(() => {
-      const processed = applyAllEffects(frames);
+      const processed = applyAllEffects(originalFrames);
       setPreviewFrames(processed);
       setIsProcessing(false);
     }, 50);
 
     return () => clearTimeout(timeoutId);
-  }, [effectValues, frames, applyAllEffects]);
+  }, [effectValues, originalFrames, applyAllEffects]);
 
   // Animate original frames
   useEffect(() => {
-    if (frames.length === 0) return;
-    const frame = frames[originalFrameIndex];
+    if (originalFrames.length === 0) return;
+    const frame = originalFrames[originalFrameIndex];
     const timeout = setTimeout(() => {
-      setOriginalFrameIndex((prev) => (prev + 1) % frames.length);
+      setOriginalFrameIndex((prev) => (prev + 1) % originalFrames.length);
     }, frame.delay);
     return () => clearTimeout(timeout);
-  }, [originalFrameIndex, frames]);
+  }, [originalFrameIndex, originalFrames]);
 
   // Animate preview frames
   useEffect(() => {
@@ -124,15 +152,15 @@ export function EffectsTool({ frames, onFramesChange }: EffectsToolProps) {
   // Draw original frame
   useEffect(() => {
     const canvas = originalCanvasRef.current;
-    if (!canvas || frames.length === 0) return;
-    const frame = frames[originalFrameIndex];
+    if (!canvas || originalFrames.length === 0) return;
+    const frame = originalFrames[originalFrameIndex];
     canvas.width = frame.imageData.width;
     canvas.height = frame.imageData.height;
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.putImageData(frame.imageData, 0, 0);
     }
-  }, [originalFrameIndex, frames]);
+  }, [originalFrameIndex, originalFrames]);
 
   // Draw preview frame
   useEffect(() => {
@@ -174,11 +202,11 @@ export function EffectsTool({ frames, onFramesChange }: EffectsToolProps) {
 
   // Calculate canvas display size
   const maxDisplaySize = 280;
-  const displayScale = frames.length > 0
-    ? Math.min(maxDisplaySize / frames[0].imageData.width, maxDisplaySize / frames[0].imageData.height, 1)
+  const displayScale = originalFrames.length > 0
+    ? Math.min(maxDisplaySize / originalFrames[0].imageData.width, maxDisplaySize / originalFrames[0].imageData.height, 1)
     : 1;
-  const displayWidth = frames.length > 0 ? frames[0].imageData.width * displayScale : maxDisplaySize;
-  const displayHeight = frames.length > 0 ? frames[0].imageData.height * displayScale : maxDisplaySize;
+  const displayWidth = originalFrames.length > 0 ? originalFrames[0].imageData.width * displayScale : maxDisplaySize;
+  const displayHeight = originalFrames.length > 0 ? originalFrames[0].imageData.height * displayScale : maxDisplaySize;
 
   // Get active effects summary
   const activeEffects = EFFECTS.filter(e => effectValues[e.name] !== (e.default ?? 0));
@@ -354,7 +382,7 @@ export function EffectsTool({ frames, onFramesChange }: EffectsToolProps) {
 
       {/* Info */}
       <div className="text-center text-xs text-gray-500">
-        {frames.length} frame{frames.length !== 1 ? 's' : ''} • Effects are applied to all frames
+        {originalFrames.length} frame{originalFrames.length !== 1 ? 's' : ''} • Effects are applied to all frames
       </div>
     </div>
   );
