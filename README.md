@@ -1,73 +1,53 @@
-# React + TypeScript + Vite
+# SmartGIF - Free Online GIF Tools
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://neonwatty.github.io/smartgif/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-93.9%25-blue)](https://www.typescriptlang.org/)
 
-Currently, two official plugins are available:
+**Convert, edit, and optimize GIFs entirely in your browser. No uploads, no servers, 100% private.**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+[**Try SmartGIF Now**](https://neonwatty.github.io/smartgif/)
 
-## React Compiler
+![SmartGIF Screenshot](https://neonwatty.github.io/smartgif/og-image.png)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Features
 
-## Expanding the ESLint configuration
+- **100% Client-Side** - Files never leave your device
+- **Works Offline** - Use without internet after first load
+- **No Watermarks** - Clean exports, completely free
+- **Target File Size** - Optimize to exact KB for Discord, Slack, etc.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Tools
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+| Tool | Description |
+|------|-------------|
+| [Convert to GIF](https://neonwatty.github.io/smartgif/convert) | MP4, WebM, PNG, JPG, WebP to GIF |
+| [Crop](https://neonwatty.github.io/smartgif/crop-gif) | Aspect ratio presets, freeform |
+| [Resize](https://neonwatty.github.io/smartgif/resize-gif) | Platform presets for Discord, Twitter |
+| [Speed](https://neonwatty.github.io/smartgif/change-gif-speed) | Speed up or slow down |
+| [Reverse](https://neonwatty.github.io/smartgif/reverse-gif) | Backwards, boomerang loops |
+| [Rotate & Flip](https://neonwatty.github.io/smartgif/rotate-flip-gif) | 90°/180°/270°, flip H/V |
+| [Effects](https://neonwatty.github.io/smartgif/effects) | Grayscale, sepia, blur, brightness |
+| [Split](https://neonwatty.github.io/smartgif/gif-to-frames) | Extract frames as PNG |
+| [Discord](https://neonwatty.github.io/smartgif/discord) | Emoji, sticker, avatar presets |
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Quick Start
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+git clone https://github.com/neonwatty/smartgif.git
+cd smartgif
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Tech Stack
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+React 18, TypeScript, Vite, gifenc
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Contributing
+
+PRs welcome! Fork, create a branch, and submit a pull request.
+
+## License
+
+MIT
